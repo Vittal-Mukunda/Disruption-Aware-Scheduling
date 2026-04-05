@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx skills:*)",
+      "Bash(xargs ls:*)",
+      "Bash(python3 -c ':*)",
+      "Bash(python -c ':*)",
+      "Bash(npx --no-install vite build --mode development)",
+      "Bash(npx vite:*)",
+      "Bash(python scripts/generate_rf_dataset.py)",
+      "Bash(python scripts/run_full_pipeline.py --quick)",
+      "Bash(grep -n \"\\\\\\\\\\\\\\\\u2192\\\\|→\\\\|←\\\\|→\" src/data_generator.py src/train_selector.py src/train_priority.py)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(python start.py)",
+      "Bash(python:*)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(pkill -f \"uvicorn server:app\")",
+      "Bash(taskkill /F /IM python.exe /T)"
+    ]
+  }
+}

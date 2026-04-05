@@ -1,0 +1,53 @@
+2026-04-05 09:26:14,355  INFO      root  Log file: C:\Users\Admin\OneDrive\Desktop\DAHS\logs\pipeline_20260405_092614.log
+2026-04-05 09:26:14,355  INFO      root  Pipeline mode: FULL | seed=0 | workers=31
+2026-04-05 09:26:14,355  INFO      root  STEP: Step 0: Checking Dependencies
+2026-04-05 09:26:15,921  INFO      root  STEP: Step 1: Data Generation (6 heuristics per scenario)
+2026-04-05 09:26:15,966  INFO      src.data_generator  Generating selector dataset: 1000 scenarios × 6 heuristics
+2026-04-05 09:28:47,137  INFO      src.data_generator  Selector dataset shape: (1000, 23)
+2026-04-05 09:28:47,138  INFO      src.data_generator  Label distribution: {np.int64(0): np.int64(34), np.int64(1): np.int64(79), np.int64(2): np.int64(54), np.int64(3): np.int64(324), np.int64(4): np.int64(494), np.int64(5): np.int64(15)}
+2026-04-05 09:28:47,171  INFO      src.data_generator  Saved selector dataset -> C:\Users\Admin\OneDrive\Desktop\DAHS\data\raw\selector_dataset.csv
+2026-04-05 09:28:47,179  INFO      src.data_generator  Generating priority dataset: 500 scenarios × 10 points
+2026-04-05 09:29:16,339  INFO      src.data_generator  Priority dataset shape: (5000, 30)
+2026-04-05 09:29:16,621  INFO      src.data_generator  Saved priority dataset -> C:\Users\Admin\OneDrive\Desktop\DAHS\data\raw\priority_dataset.csv
+2026-04-05 09:29:16,621  INFO      root  STEP: Step 2: Training Selector Models (DT / RF / XGB) ? 6 classes
+2026-04-05 09:29:16,637  INFO      src.train_selector  Loading selector dataset from C:\Users\Admin\OneDrive\Desktop\DAHS\data\raw\selector_dataset.csv
+2026-04-05 09:29:16,641  INFO      src.train_selector  Dataset shape: X=(1000, 22), label distribution: {np.int64(0): np.int64(34), np.int64(1): np.int64(79), np.int64(2): np.int64(54), np.int64(3): np.int64(324), np.int64(4): np.int64(494), np.int64(5): np.int64(15)}
+2026-04-05 09:29:16,641  INFO      src.train_selector  Training DT ...
+2026-04-05 09:29:17,988  INFO      src.train_selector  [DT] CV accuracy: 0.3187 +/- 0.0375
+2026-04-05 09:29:17,991  INFO      src.train_selector  Saved model -> C:\Users\Admin\OneDrive\Desktop\DAHS\models\selector_dt.joblib
+2026-04-05 09:29:17,991  INFO      src.train_selector  Training RF ...
+2026-04-05 09:29:19,668  INFO      src.train_selector  [RF] CV accuracy: 0.4788 +/- 0.0211
+2026-04-05 09:29:19,804  INFO      src.train_selector  Saved model -> C:\Users\Admin\OneDrive\Desktop\DAHS\models\selector_rf.joblib
+2026-04-05 09:29:19,804  INFO      src.train_selector  Training XGB ...
+2026-04-05 09:29:25,060  INFO      src.train_selector  [XGB] CV accuracy: 0.4412 +/- 0.0236
+2026-04-05 09:29:25,161  INFO      src.train_selector  Saved model -> C:\Users\Admin\OneDrive\Desktop\DAHS\models\selector_xgb.joblib
+2026-04-05 09:29:25,461  INFO      src.train_selector  Saved feature importance plot -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\feature_importance.png
+2026-04-05 09:29:26,121  INFO      src.train_selector  Saved decision tree plot -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\decision_tree.png
+2026-04-05 09:29:26,121  INFO      root  STEP: Step 3: Training Priority Predictor (GBR) ? multi-criteria oracle labels
+2026-04-05 09:29:26,121  INFO      src.train_priority  Loading priority dataset from C:\Users\Admin\OneDrive\Desktop\DAHS\data\raw\priority_dataset.csv
+2026-04-05 09:29:26,137  INFO      src.train_priority  Priority dataset shape: X=(5000, 29), y=(5000,)
+2026-04-05 09:29:26,137  INFO      src.train_priority  Training GradientBoostingRegressor ...
+2026-04-05 09:29:28,772  INFO      src.train_priority  GBR Test -> R^2=0.6775  MAE=0.0158  RMSE=0.0366
+2026-04-05 09:29:32,040  INFO      src.train_priority  GBR CV R^2: 0.6580 +/- 0.0160
+2026-04-05 09:29:32,040  INFO      src.train_priority  Saved model -> C:\Users\Admin\OneDrive\Desktop\DAHS\models\priority_gbr.joblib
+2026-04-05 09:29:32,040  INFO      src.train_priority  Computing SHAP values ...
+2026-04-05 09:29:32,687  INFO      src.train_priority  Saved SHAP plot -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\shap_summary.png
+2026-04-05 09:29:32,687  INFO      root  STEP: Step 4: Running Benchmark (300 scenarios x 9 methods = 2700 sims)
+2026-04-05 09:29:32,687  INFO      src.evaluator  Benchmark: 300 seeds x 9 methods = 2700 runs
+2026-04-05 10:18:38,542  INFO      src.evaluator  Saved benchmark results -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\benchmark_results.csv
+2026-04-05 10:18:38,560  INFO      root  STEP: Step 5: Comprehensive Statistical Analysis
+2026-04-05 10:18:38,643  INFO      src.evaluator  [Friedman] total_tardiness: ?^2=2345.92, p=0.000000, significant=True
+2026-04-05 10:18:38,646  INFO      src.evaluator  Best baseline (tardiness): WSPT (mean=1626.0)
+2026-04-05 10:18:38,680  INFO      src.evaluator  [Wilcoxon] Hybrid-RF vs WSPT: stat=0.00, p=nan, d=0.000, CI=[0.0, 0.0] -> regression
+2026-04-05 10:18:38,708  INFO      src.evaluator  [Wilcoxon] Hybrid-XGB vs WSPT: stat=4.00, p=0.3452, d=0.063, CI=[-2.9, 27.1] -> improvement
+2026-04-05 10:18:38,747  INFO      src.evaluator  [Wilcoxon] Hybrid-Priority vs WSPT: stat=0.00, p=0.0000, d=-3.561, CI=[-7433.6, -6979.9] -> regression
+2026-04-05 10:18:38,751  INFO      root  STEP: Step 6: Generating Publication-Quality Plots (8 figures)
+2026-04-05 10:18:39,008  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\benchmark_boxplot.png
+2026-04-05 10:18:39,140  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\sla_breach_comparison.png
+2026-04-05 10:18:39,325  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\utilization_heatmap.png
+2026-04-05 10:18:39,540  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\pareto_front.png
+2026-04-05 10:18:39,721  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\radar_comparison.png
+2026-04-05 10:18:39,796  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\critical_difference.png
+2026-04-05 10:18:39,876  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\effect_sizes.png
+2026-04-05 10:18:39,937  INFO      src.hybrid_scheduler  HybridSelector loaded model from C:\Users\Admin\OneDrive\Desktop\DAHS\models\selector_rf.joblib
+2026-04-05 10:18:40,733  INFO      src.evaluator  Saved -> C:\Users\Admin\OneDrive\Desktop\DAHS\results\plots\gantt_sample.png
