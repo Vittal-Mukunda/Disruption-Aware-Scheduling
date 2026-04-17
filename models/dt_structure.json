@@ -1,0 +1,2396 @@
+{
+  "nodes": [
+    {
+      "id": 6,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 7,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 5,
+      "samples": 2,
+      "impurity": 0.4494,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_std",
+      "featureIdx": 5,
+      "threshold": 0.3,
+      "left": 6,
+      "right": 7
+    },
+    {
+      "id": 10,
+      "samples": 34,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 12,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 13,
+      "samples": 6,
+      "impurity": -0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 11,
+      "samples": 7,
+      "impurity": 0.3813,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_due_date_tightness",
+      "featureIdx": 2,
+      "threshold": 93.0858,
+      "left": 12,
+      "right": 13
+    },
+    {
+      "id": 9,
+      "samples": 41,
+      "impurity": 0.0935,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_due_date_tightness",
+      "featureIdx": 2,
+      "threshold": 89.7982,
+      "left": 10,
+      "right": 11
+    },
+    {
+      "id": 15,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 16,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 14,
+      "samples": 2,
+      "impurity": 0.32,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_express_orders_pct",
+      "featureIdx": 1,
+      "threshold": 0.0623,
+      "left": 15,
+      "right": 16
+    },
+    {
+      "id": 8,
+      "samples": 43,
+      "impurity": 0.2321,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "std_remaining_proc_time",
+      "featureIdx": 8,
+      "threshold": 9.2209,
+      "left": 9,
+      "right": 14
+    },
+    {
+      "id": 4,
+      "samples": 45,
+      "impurity": 0.3759,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_avg",
+      "featureIdx": 4,
+      "threshold": 0.4458,
+      "left": 5,
+      "right": 8
+    },
+    {
+      "id": 21,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 22,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 20,
+      "samples": 2,
+      "impurity": 0.4393,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_avg",
+      "featureIdx": 4,
+      "threshold": 0.6737,
+      "left": 21,
+      "right": 22
+    },
+    {
+      "id": 23,
+      "samples": 9,
+      "impurity": -0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 19,
+      "samples": 11,
+      "impurity": 0.088,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "sla_breach_rate_current",
+      "featureIdx": 17,
+      "threshold": 0.7046,
+      "left": 20,
+      "right": 23
+    },
+    {
+      "id": 25,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 27,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 28,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 26,
+      "samples": 2,
+      "impurity": 0.4985,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "fraction_already_late",
+      "featureIdx": 3,
+      "threshold": 0.5719,
+      "left": 27,
+      "right": 28
+    },
+    {
+      "id": 24,
+      "samples": 3,
+      "impurity": 0.6351,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.45,
+      "left": 25,
+      "right": 26
+    },
+    {
+      "id": 18,
+      "samples": 14,
+      "impurity": 0.4023,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.4,
+      "left": 19,
+      "right": 24
+    },
+    {
+      "id": 30,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 31,
+      "samples": 2,
+      "impurity": -0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 29,
+      "samples": 3,
+      "impurity": 0.4965,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.4362,
+      "left": 30,
+      "right": 31
+    },
+    {
+      "id": 17,
+      "samples": 17,
+      "impurity": 0.5425,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 34.2304,
+      "left": 18,
+      "right": 29
+    },
+    {
+      "id": 3,
+      "samples": 62,
+      "impurity": 0.6583,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "sla_breach_rate_current",
+      "featureIdx": 17,
+      "threshold": 0.6671,
+      "left": 4,
+      "right": 17
+    },
+    {
+      "id": 37,
+      "samples": 5,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 39,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 40,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 38,
+      "samples": 2,
+      "impurity": 0.4218,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 35.6059,
+      "left": 39,
+      "right": 40
+    },
+    {
+      "id": 36,
+      "samples": 7,
+      "impurity": 0.1256,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_priority_weight",
+      "featureIdx": 15,
+      "threshold": 1.48,
+      "left": 37,
+      "right": 38
+    },
+    {
+      "id": 41,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 35,
+      "samples": 9,
+      "impurity": 0.2927,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "std_remaining_proc_time",
+      "featureIdx": 8,
+      "threshold": 8.4164,
+      "left": 36,
+      "right": 41
+    },
+    {
+      "id": 43,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 44,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 42,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.3875,
+      "left": 43,
+      "right": 44
+    },
+    {
+      "id": 34,
+      "samples": 11,
+      "impurity": 0.4567,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.55,
+      "left": 35,
+      "right": 42
+    },
+    {
+      "id": 47,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 50,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 51,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 49,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 34.3281,
+      "left": 50,
+      "right": 51
+    },
+    {
+      "id": 52,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 48,
+      "samples": 3,
+      "impurity": 0.2927,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.3688,
+      "left": 49,
+      "right": 52
+    },
+    {
+      "id": 46,
+      "samples": 5,
+      "impurity": 0.5727,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.9974,
+      "left": 47,
+      "right": 48
+    },
+    {
+      "id": 54,
+      "samples": 3,
+      "impurity": -0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 55,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 53,
+      "samples": 4,
+      "impurity": 0.1833,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_express_orders_pct",
+      "featureIdx": 1,
+      "threshold": 0.02,
+      "left": 54,
+      "right": 55
+    },
+    {
+      "id": 45,
+      "samples": 9,
+      "impurity": 0.6115,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "std_remaining_proc_time",
+      "featureIdx": 8,
+      "threshold": 8.0158,
+      "left": 46,
+      "right": 53
+    },
+    {
+      "id": 33,
+      "samples": 20,
+      "impurity": 0.6788,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_std",
+      "featureIdx": 5,
+      "threshold": 0.2246,
+      "left": 34,
+      "right": 45
+    },
+    {
+      "id": 59,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 60,
+      "samples": 4,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 58,
+      "samples": 5,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.9114,
+      "left": 59,
+      "right": 60
+    },
+    {
+      "id": 61,
+      "samples": 2,
+      "impurity": -0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 57,
+      "samples": 7,
+      "impurity": 0.2715,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.5975,
+      "left": 58,
+      "right": 61
+    },
+    {
+      "id": 64,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 65,
+      "samples": 4,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 63,
+      "samples": 5,
+      "impurity": 0.341,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "job_mix_entropy",
+      "featureIdx": 20,
+      "threshold": 1.9604,
+      "left": 64,
+      "right": 65
+    },
+    {
+      "id": 67,
+      "samples": 7,
+      "impurity": -0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 69,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 70,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 68,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "time_pressure_ratio",
+      "featureIdx": 21,
+      "threshold": 0.6485,
+      "left": 69,
+      "right": 70
+    },
+    {
+      "id": 66,
+      "samples": 9,
+      "impurity": 0.2472,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_broken_stations",
+      "featureIdx": 11,
+      "threshold": 6.5,
+      "left": 67,
+      "right": 68
+    },
+    {
+      "id": 62,
+      "samples": 14,
+      "impurity": 0.52,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 36.1087,
+      "left": 63,
+      "right": 66
+    },
+    {
+      "id": 56,
+      "samples": 21,
+      "impurity": 0.6001,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_express_orders_pct",
+      "featureIdx": 1,
+      "threshold": 0.0016,
+      "left": 57,
+      "right": 62
+    },
+    {
+      "id": 32,
+      "samples": 41,
+      "impurity": 0.713,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 36.0254,
+      "left": 33,
+      "right": 56
+    },
+    {
+      "id": 2,
+      "samples": 103,
+      "impurity": 0.7674,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.5101,
+      "left": 3,
+      "right": 32
+    },
+    {
+      "id": 75,
+      "samples": 20,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 77,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 78,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 76,
+      "samples": 2,
+      "impurity": 0.4882,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "std_remaining_proc_time",
+      "featureIdx": 8,
+      "threshold": 9.2066,
+      "left": 77,
+      "right": 78
+    },
+    {
+      "id": 74,
+      "samples": 22,
+      "impurity": 0.0652,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_priority_weight",
+      "featureIdx": 15,
+      "threshold": 2.3106,
+      "left": 75,
+      "right": 76
+    },
+    {
+      "id": 80,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 81,
+      "samples": 4,
+      "impurity": -0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 79,
+      "samples": 5,
+      "impurity": 0.3987,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 17.7872,
+      "left": 80,
+      "right": 81
+    },
+    {
+      "id": 73,
+      "samples": 27,
+      "impurity": 0.1545,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.9461,
+      "left": 74,
+      "right": 79
+    },
+    {
+      "id": 83,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 84,
+      "samples": 2,
+      "impurity": -0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 82,
+      "samples": 3,
+      "impurity": 0.4274,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_std",
+      "featureIdx": 5,
+      "threshold": 0.2507,
+      "left": 83,
+      "right": 84
+    },
+    {
+      "id": 72,
+      "samples": 30,
+      "impurity": 0.3749,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_broken_stations",
+      "featureIdx": 11,
+      "threshold": 3.5,
+      "left": 73,
+      "right": 82
+    },
+    {
+      "id": 85,
+      "samples": 6,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 71,
+      "samples": 36,
+      "impurity": 0.497,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_due_date_tightness",
+      "featureIdx": 2,
+      "threshold": 13.7698,
+      "left": 72,
+      "right": 85
+    },
+    {
+      "id": 1,
+      "samples": 139,
+      "impurity": 0.7885,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_express_orders_pct",
+      "featureIdx": 1,
+      "threshold": 0.4616,
+      "left": 2,
+      "right": 71
+    },
+    {
+      "id": 89,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 91,
+      "samples": 6,
+      "impurity": 0.0,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 92,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 90,
+      "samples": 7,
+      "impurity": 0.0721,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_avg",
+      "featureIdx": 4,
+      "threshold": 0.4255,
+      "left": 91,
+      "right": 92
+    },
+    {
+      "id": 88,
+      "samples": 8,
+      "impurity": 0.1576,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_avg",
+      "featureIdx": 4,
+      "threshold": 0.1733,
+      "left": 89,
+      "right": 90
+    },
+    {
+      "id": 97,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 98,
+      "samples": 5,
+      "impurity": -0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 96,
+      "samples": 6,
+      "impurity": 0.3572,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.8964,
+      "left": 97,
+      "right": 98
+    },
+    {
+      "id": 101,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 102,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 100,
+      "samples": 3,
+      "impurity": 0.4974,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "std_remaining_proc_time",
+      "featureIdx": 8,
+      "threshold": 3.973,
+      "left": 101,
+      "right": 102
+    },
+    {
+      "id": 103,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 99,
+      "samples": 4,
+      "impurity": 0.6331,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "job_mix_entropy",
+      "featureIdx": 20,
+      "threshold": 0.2256,
+      "left": 100,
+      "right": 103
+    },
+    {
+      "id": 95,
+      "samples": 10,
+      "impurity": 0.7426,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_orders_in_system",
+      "featureIdx": 0,
+      "threshold": 291.5,
+      "left": 96,
+      "right": 99
+    },
+    {
+      "id": 104,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 94,
+      "samples": 12,
+      "impurity": 0.6785,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 33.6188,
+      "left": 95,
+      "right": 104
+    },
+    {
+      "id": 111,
+      "samples": 2,
+      "impurity": 0.4882,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 112,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 110,
+      "samples": 3,
+      "impurity": 0.6366,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_due_date_tightness",
+      "featureIdx": 2,
+      "threshold": 433.2542,
+      "left": 111,
+      "right": 112
+    },
+    {
+      "id": 114,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 115,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 113,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_std",
+      "featureIdx": 5,
+      "threshold": 0.3599,
+      "left": 114,
+      "right": 115
+    },
+    {
+      "id": 109,
+      "samples": 5,
+      "impurity": 0.6526,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.225,
+      "left": 110,
+      "right": 113
+    },
+    {
+      "id": 116,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 108,
+      "samples": 7,
+      "impurity": 0.6717,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "time_pressure_ratio",
+      "featureIdx": 21,
+      "threshold": 0.0012,
+      "left": 109,
+      "right": 116
+    },
+    {
+      "id": 119,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 120,
+      "samples": 1,
+      "impurity": -0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 118,
+      "samples": 2,
+      "impurity": 0.3662,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 33.563,
+      "left": 119,
+      "right": 120
+    },
+    {
+      "id": 121,
+      "samples": 5,
+      "impurity": -0.0,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 117,
+      "samples": 7,
+      "impurity": 0.0956,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "job_mix_entropy",
+      "featureIdx": 20,
+      "threshold": 0.1707,
+      "left": 118,
+      "right": 121
+    },
+    {
+      "id": 107,
+      "samples": 14,
+      "impurity": 0.3946,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.4723,
+      "left": 108,
+      "right": 117
+    },
+    {
+      "id": 123,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 124,
+      "samples": 2,
+      "impurity": -0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 122,
+      "samples": 3,
+      "impurity": 0.4274,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "queue_imbalance",
+      "featureIdx": 19,
+      "threshold": 2.4701,
+      "left": 123,
+      "right": 124
+    },
+    {
+      "id": 106,
+      "samples": 17,
+      "impurity": 0.5128,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_priority_weight",
+      "featureIdx": 15,
+      "threshold": 1.0085,
+      "left": 107,
+      "right": 122
+    },
+    {
+      "id": 127,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "FIFO",
+      "classIdx": 0,
+      "values": [
+        1,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 128,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "id": 126,
+      "samples": 4,
+      "impurity": 0.4789,
+      "class": "Slack",
+      "classIdx": 5,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_remaining_proc_time",
+      "featureIdx": 7,
+      "threshold": 33.6449,
+      "left": 127,
+      "right": 128
+    },
+    {
+      "id": 130,
+      "samples": 2,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 132,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 133,
+      "samples": 1,
+      "impurity": 0.0,
+      "class": "WSPT",
+      "classIdx": 4,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "id": 131,
+      "samples": 2,
+      "impurity": 0.4218,
+      "class": "Priority-EDD",
+      "classIdx": 1,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.9822,
+      "left": 132,
+      "right": 133
+    },
+    {
+      "id": 129,
+      "samples": 4,
+      "impurity": 0.45,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "bottleneck_zone",
+      "featureIdx": 6,
+      "threshold": 0.9798,
+      "left": 130,
+      "right": 131
+    },
+    {
+      "id": 125,
+      "samples": 8,
+      "impurity": 0.7127,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "job_mix_entropy",
+      "featureIdx": 20,
+      "threshold": 0.1758,
+      "left": 126,
+      "right": 129
+    },
+    {
+      "id": 105,
+      "samples": 25,
+      "impurity": 0.6951,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "fraction_already_late",
+      "featureIdx": 3,
+      "threshold": 0.0013,
+      "left": 106,
+      "right": 125
+    },
+    {
+      "id": 93,
+      "samples": 37,
+      "impurity": 0.7727,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "zone_utilization_avg",
+      "featureIdx": 4,
+      "threshold": 0.4887,
+      "left": 94,
+      "right": 105
+    },
+    {
+      "id": 87,
+      "samples": 45,
+      "impurity": 0.7011,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "n_orders_in_system",
+      "featureIdx": 0,
+      "threshold": 125.0,
+      "left": 88,
+      "right": 93
+    },
+    {
+      "id": 134,
+      "samples": 4,
+      "impurity": 0.0,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "id": 86,
+      "samples": 49,
+      "impurity": 0.7195,
+      "class": "Critical-Ratio",
+      "classIdx": 2,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "disruption_intensity",
+      "featureIdx": 18,
+      "threshold": 0.4188,
+      "left": 87,
+      "right": 134
+    },
+    {
+      "id": 0,
+      "samples": 188,
+      "impurity": 0.8333,
+      "class": "ATC",
+      "classIdx": 3,
+      "values": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feature": "avg_due_date_tightness",
+      "featureIdx": 2,
+      "threshold": 168.5264,
+      "left": 1,
+      "right": 86
+    }
+  ],
+  "featureNames": [
+    "n_orders_in_system",
+    "n_express_orders_pct",
+    "avg_due_date_tightness",
+    "fraction_already_late",
+    "zone_utilization_avg",
+    "zone_utilization_std",
+    "bottleneck_zone",
+    "avg_remaining_proc_time",
+    "std_remaining_proc_time",
+    "throughput_last_30min",
+    "breakdown_flag",
+    "n_broken_stations",
+    "lunch_break_flag",
+    "surge_multiplier",
+    "batch_pending_flag",
+    "avg_priority_weight",
+    "max_tardiness_so_far",
+    "sla_breach_rate_current",
+    "disruption_intensity",
+    "queue_imbalance",
+    "job_mix_entropy",
+    "time_pressure_ratio"
+  ],
+  "classNames": [
+    "FIFO",
+    "Priority-EDD",
+    "Critical-Ratio",
+    "ATC",
+    "WSPT",
+    "Slack"
+  ]
+}

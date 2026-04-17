@@ -1,0 +1,20 @@
+{
+  "source": "calibrated_from_olist_real_data",
+  "arrival_rate_per_min": 0.5,
+  "due_date_tightness": 1.5,
+  "job_type_frequencies": {
+    "A": 0.21,
+    "B": 0.28,
+    "C": 0.223,
+    "D": 0.187,
+    "E": 0.1
+  },
+  "sla_breach_rate_baseline_target": 0.08112366538820359,
+  "raw_olist_stats": {
+    "orders_per_day_mean": 157.6437908496732,
+    "orders_per_600min_shift": 98.52736928104575,
+    "sla_window_median_days": 23.23087962962963,
+    "cycle_time_median_days": 10.217476851851853,
+    "sla_breach_rate": 0.08112366538820359
+  }
+}

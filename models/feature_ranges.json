@@ -1,0 +1,90 @@
+{
+  "n_orders_in_system": [
+    14.0,
+    1952.0
+  ],
+  "n_express_orders_pct": [
+    0.0,
+    0.49699878692626953
+  ],
+  "avg_due_date_tightness": [
+    -103.7861557006836,
+    596.7627563476562
+  ],
+  "fraction_already_late": [
+    0.0,
+    0.7898686528205872
+  ],
+  "zone_utilization_avg": [
+    0.15396057069301605,
+    0.6771979331970215
+  ],
+  "zone_utilization_std": [
+    0.21161480247974396,
+    0.3694012463092804
+  ],
+  "bottleneck_zone": [
+    0.7347471117973328,
+    1.0
+  ],
+  "avg_remaining_proc_time": [
+    13.983307838439941,
+    36.664432525634766
+  ],
+  "std_remaining_proc_time": [
+    0.0,
+    9.436907768249512
+  ],
+  "throughput_last_30min": [
+    0.0,
+    0.0
+  ],
+  "breakdown_flag": [
+    0.0,
+    1.0
+  ],
+  "n_broken_stations": [
+    0.0,
+    10.0
+  ],
+  "lunch_break_flag": [
+    0.0,
+    1.0
+  ],
+  "surge_multiplier": [
+    0.699999988079071,
+    1.399999976158142
+  ],
+  "batch_pending_flag": [
+    0.0,
+    0.0
+  ],
+  "avg_priority_weight": [
+    0.996610164642334,
+    2.3632652759552
+  ],
+  "max_tardiness_so_far": [
+    0.0,
+    406.8102111816406
+  ],
+  "sla_breach_rate_current": [
+    0.0,
+    0.8258928656578064
+  ],
+  "disruption_intensity": [
+    0.0,
+    0.824999988079071
+  ],
+  "queue_imbalance": [
+    1.3228756189346313,
+    2.6457512378692627
+  ],
+  "job_mix_entropy": [
+    0.0,
+    2.1868491172790527
+  ],
+  "time_pressure_ratio": [
+    0.0,
+    0.8395872712135315
+  ]
+}

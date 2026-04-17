@@ -1,0 +1,134 @@
+[
+  {
+    "name": "n_orders_in_system",
+    "description": "Total jobs currently in the system (waiting + processing)",
+    "category": "system",
+    "index": 0
+  },
+  {
+    "name": "n_express_orders_pct",
+    "description": "Fraction of waiting jobs that are express (type E)",
+    "category": "system",
+    "index": 1
+  },
+  {
+    "name": "avg_due_date_tightness",
+    "description": "Average (due_date - now) for waiting jobs",
+    "category": "timing",
+    "index": 2
+  },
+  {
+    "name": "fraction_already_late",
+    "description": "Fraction of waiting jobs past their due date",
+    "category": "system",
+    "index": 3
+  },
+  {
+    "name": "zone_utilization_avg",
+    "description": "Average utilization across all 8 zones",
+    "category": "utilization",
+    "index": 4
+  },
+  {
+    "name": "zone_utilization_std",
+    "description": "Std deviation of zone utilization (imbalance indicator)",
+    "category": "utilization",
+    "index": 5
+  },
+  {
+    "name": "bottleneck_zone",
+    "description": "Utilization of the most-loaded zone",
+    "category": "utilization",
+    "index": 6
+  },
+  {
+    "name": "avg_remaining_proc_time",
+    "description": "Average remaining processing time for waiting jobs",
+    "category": "system",
+    "index": 7
+  },
+  {
+    "name": "std_remaining_proc_time",
+    "description": "Std deviation of remaining processing times",
+    "category": "system",
+    "index": 8
+  },
+  {
+    "name": "throughput_last_30min",
+    "description": "Jobs completed per minute in the last 30 minutes",
+    "category": "queue",
+    "index": 9
+  },
+  {
+    "name": "breakdown_flag",
+    "description": "1 if any station is currently broken, else 0",
+    "category": "system",
+    "index": 10
+  },
+  {
+    "name": "n_broken_stations",
+    "description": "Number of stations currently under repair",
+    "category": "system",
+    "index": 11
+  },
+  {
+    "name": "lunch_break_flag",
+    "description": "1 if shift is currently in lunch break (t=300-360), else 0",
+    "category": "system",
+    "index": 12
+  },
+  {
+    "name": "surge_multiplier",
+    "description": "Current time-of-day arrival rate multiplier",
+    "category": "system",
+    "index": 13
+  },
+  {
+    "name": "batch_pending_flag",
+    "description": "1 if a truck batch arrival is imminent",
+    "category": "system",
+    "index": 14
+  },
+  {
+    "name": "avg_priority_weight",
+    "description": "Average priority weight of waiting jobs",
+    "category": "system",
+    "index": 15
+  },
+  {
+    "name": "max_tardiness_so_far",
+    "description": "Maximum job tardiness observed so far",
+    "category": "timing",
+    "index": 16
+  },
+  {
+    "name": "sla_breach_rate_current",
+    "description": "Fraction of completed jobs that breached SLA",
+    "category": "timing",
+    "index": 17
+  },
+  {
+    "name": "disruption_intensity",
+    "description": "[NOVEL] Composite disruption score: breakdowns + lunch + surge",
+    "category": "disruption",
+    "index": 18
+  },
+  {
+    "name": "queue_imbalance",
+    "description": "[NOVEL] Coefficient of variation of queue sizes across zones",
+    "category": "disruption",
+    "index": 19
+  },
+  {
+    "name": "job_mix_entropy",
+    "description": "[NOVEL] Shannon entropy of job-type distribution in queue",
+    "category": "disruption",
+    "index": 20
+  },
+  {
+    "name": "time_pressure_ratio",
+    "description": "[NOVEL] Fraction of waiting jobs with Critical Ratio < 1",
+    "category": "disruption",
+    "index": 21
+  }
+]

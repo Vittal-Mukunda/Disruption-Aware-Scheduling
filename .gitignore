@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+venv/
+env/
+
+# Data — raw/generated (large, reproducible via pipeline)
+data/raw/
+
+# Real datasets (large CSV files, not for version control)
+data/real/olist_orders_dataset.csv
+data/real/olist_order_items_dataset.csv
+data/real/olist_products_dataset.csv
+
+# Logs
+logs/
+
+# Frontend
+website/node_modules/
+website/.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Jupyter
+.ipynb_checkpoints/
