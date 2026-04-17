@@ -9,13 +9,7 @@ __pycache__/
 venv/
 env/
 
-# Data — raw/generated (large, reproducible via pipeline)
-data/raw/
-
-# Real datasets (large CSV files, not for version control)
-data/real/olist_orders_dataset.csv
-data/real/olist_order_items_dataset.csv
-data/real/olist_products_dataset.csv
+# Nothing excluded from data/ — all datasets included
 
 # Logs
 logs/
