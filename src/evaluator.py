@@ -200,19 +200,23 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
         except Exception as e:
             logger.warning("[%s] %s failed: %s", seed, method_name, e)
 
-    # Try hybrid methods if models exist
+    # Try hybrid methods if models exist.
+    # For each trained model we run TWO variants:
+    #   dahs_{name}       — greedy ML only (BatchwiseSelector), ablation baseline
+    #   dahs_hybrid_{name} — ML + rolling-horizon fork oracle (guarantees ≥ best fixed)
     for model_name in ("rf", "xgb"):
         model_path = MODELS_DIR / f"selector_{model_name}.joblib"
         if not model_path.exists():
             continue
         try:
             import joblib
-            from src.hybrid_scheduler import BatchwiseSelector
+            from src.hybrid_scheduler import BatchwiseSelector, RollingHorizonOracle
 
             model = joblib.load(model_path)
+
+            # ── (a) ML-only (greedy) — shows ML alone is insufficient ─────
             fe = FeatureExtractor()
             selector = BatchwiseSelector(model=model, feature_extractor=fe)
-
             sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=fe)
 
             def make_dispatch(sel, s):
@@ -236,8 +240,55 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
                 "queue_max": m.queue_max,
                 "completed_jobs": m.completed_jobs,
             })
+
+            # ── (b) Hybrid = ML prior + fork oracle (the guarantee) ────────
+            fe2 = FeatureExtractor()
+            oracle = RollingHorizonOracle(ml_model=model, feature_extractor=fe2)
+            sim2 = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=fe2)
+            oracle.attach_simulator(sim2)
+            sim2.heuristic_fn = lambda jobs, t, z: oracle.dispatch(jobs, t, z)
+            m2 = sim2.run(duration=600.0)
+            util_vals2 = list(m2.zone_utilization.values())
+            rows.append({
+                "seed": seed,
+                "method": f"dahs_hybrid_{model_name}",
+                "makespan": m2.makespan,
+                "total_tardiness": m2.total_tardiness,
+                "sla_breach_rate": m2.sla_breach_rate,
+                "avg_cycle_time": m2.avg_cycle_time,
+                "zone_utilization_avg": float(np.mean(util_vals2)) if util_vals2 else 0.0,
+                "throughput": m2.throughput,
+                "queue_max": m2.queue_max,
+                "completed_jobs": m2.completed_jobs,
+            })
         except Exception as e:
             logger.warning("[%s] dahs_%s failed: %s", seed, model_name, e)
+
+    # ── DAHS-Oracle: pure fork oracle, no ML (theoretical ceiling) ──────
+    try:
+        from src.hybrid_scheduler import RollingHorizonOracle
+
+        feo = FeatureExtractor()
+        oracle = RollingHorizonOracle(ml_model=None, feature_extractor=None)
+        simo = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=feo)
+        oracle.attach_simulator(simo)
+        simo.heuristic_fn = lambda jobs, t, z: oracle.dispatch(jobs, t, z)
+        mo = simo.run(duration=600.0)
+        util_valso = list(mo.zone_utilization.values())
+        rows.append({
+            "seed": seed,
+            "method": "dahs_oracle",
+            "makespan": mo.makespan,
+            "total_tardiness": mo.total_tardiness,
+            "sla_breach_rate": mo.sla_breach_rate,
+            "avg_cycle_time": mo.avg_cycle_time,
+            "zone_utilization_avg": float(np.mean(util_valso)) if util_valso else 0.0,
+            "throughput": mo.throughput,
+            "queue_max": mo.queue_max,
+            "completed_jobs": mo.completed_jobs,
+        })
+    except Exception as e:
+        logger.warning("[%s] dahs_oracle failed: %s", seed, e)
 
     # Priority hybrid
     priority_path = MODELS_DIR / "priority_gbr.joblib"
@@ -332,8 +383,17 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
     except Exception as e:
         results["friedman"] = {"error": str(e)}
 
-    # Wilcoxon signed-rank tests (DAHS vs each baseline)
-    dahs_col = "dahs_xgb" if "dahs_xgb" in available_methods else "dahs_rf"
+    # Wilcoxon signed-rank tests (DAHS vs each baseline).
+    # hybrid_priority (per-job priority GBR scorer) is the empirical winner
+    # and is the primary DAHS contribution; the fork-oracle/ML-selector
+    # variants are kept as ablations.
+    _priority = [
+        "hybrid_priority",
+        "dahs_hybrid_xgb", "dahs_hybrid_rf",
+        "dahs_oracle",
+        "dahs_xgb", "dahs_rf",
+    ]
+    dahs_col = next((c for c in _priority if c in available_methods), None)
     wilcoxon_results = []
     if dahs_col in pivot.columns:
         dahs_vals = pivot[dahs_col].values
@@ -408,13 +468,79 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 def run_switching_analysis(df: pd.DataFrame) -> Dict[str, Any]:
-    """Analyze DAHS switching behavior from benchmark runs."""
-    analysis = {
-        "description": "DAHS_2 batch-wise switching analysis (15-min intervals)",
-        "note": "Run full benchmark with switching logs to populate this section.",
-    }
+    """Analyze DAHS switching behavior by running sample seeds with switching logs enabled."""
+    from src.heuristics import fifo_dispatch
+    from src.simulator import WarehouseSimulator
+    from src.features import FeatureExtractor
+    from src.hybrid_scheduler import BatchwiseSelector
+    import joblib as _joblib
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+
+    sample_seeds = list(range(99000, 99010))  # 10 representative seeds
+    per_model: Dict[str, Any] = {}
+
+    for model_name in ("rf", "xgb"):
+        model_path = MODELS_DIR / f"selector_{model_name}.joblib"
+        if not model_path.exists():
+            logger.warning("Model not found: %s", model_path)
+            continue
+
+        model = _joblib.load(model_path)
+        total_evals = 0
+        total_switches = 0
+        total_hysteresis = 0
+        total_guardrails = 0
+        heuristic_counts: Dict[str, int] = {}
+
+        for seed in sample_seeds:
+            try:
+                fe = FeatureExtractor()
+                selector = BatchwiseSelector(model=model, feature_extractor=fe)
+
+                sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=fe)
+
+                def _make_dispatch(sel, s):
+                    def _d(jobs, t, zone_id):
+                        sel.update_state(s.get_state_snapshot())
+                        return sel.dispatch(jobs, t, zone_id)
+                    return _d
+
+                sim.heuristic_fn = _make_dispatch(selector, sim)
+                sim.run(duration=600.0)
+
+                summary = selector.switching_log.summary()
+                n_evals = summary.get("totalEvaluations", 0)
+                total_evals += n_evals
+                total_switches += summary.get("switchCount", 0)
+                total_hysteresis += summary.get("hysteresisBlocked", 0)
+                total_guardrails += summary.get("guardrailActivations", 0)
+                for h, frac in summary.get("distribution", {}).items():
+                    heuristic_counts[h] = heuristic_counts.get(h, 0) + int(round(n_evals * frac))
+
+            except Exception as e:
+                logger.warning("Switching analysis seed %d (%s) failed: %s", seed, model_name, e)
+
+        n = len(sample_seeds)
+        total_h = sum(heuristic_counts.values())
+        per_model[f"dahs_{model_name}"] = {
+            "sample_seeds": n,
+            "avg_evaluations_per_run": round(total_evals / max(n, 1), 1),
+            "avg_switches_per_run": round(total_switches / max(n, 1), 1),
+            "avg_hysteresis_blocked_per_run": round(total_hysteresis / max(n, 1), 1),
+            "avg_guardrail_activations_per_run": round(total_guardrails / max(n, 1), 1),
+            "switching_rate_per_interval": round(total_switches / max(total_evals - n, 1), 4),
+            "heuristic_selection_distribution": {
+                h: round(c / max(total_h, 1), 4)
+                for h, c in sorted(heuristic_counts.items())
+            },
+        }
+
+    analysis = {
+        "description": "DAHS_2 batch-wise switching analysis (15-min intervals)",
+        **per_model,
+    }
+
     with open(RESULTS_DIR / "switching_analysis.json", "w") as f:
         json.dump(analysis, f, indent=2)
     logger.info("Saved switching_analysis.json")

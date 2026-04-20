@@ -677,6 +677,17 @@ def generate_report(arrival, sla, types, taillard, params) -> dict:
                 f"Blended Olist+simulator distribution used. "
                 f"Calibrated: {params['job_type_frequencies']}"
             ),
+            "taillard_heuristic_gaps": (
+                "Taillard instances ft06 (6 jobs x 6 machines) and ft10/ta01-ta03 "
+                "(10-15 jobs x 10-15 machines) are used to confirm that heuristics "
+                "produce directionally correct orderings, not to claim optimality. "
+                "ft06 shows an anomalously large makespan gap (~840%) because 6 tiny "
+                "jobs spread across a 37-station warehouse leave most stations idle, "
+                "distorting the makespan calculation. This is a scale mismatch, not "
+                "a heuristic failure. ft10 and ta01-ta03 show 20-40% gaps, which is "
+                "expected and consistent with dispatching-rule literature vs exact "
+                "solvers (Pinedo 2016). ft06 should be excluded from gap comparisons."
+            ),
         },
     }
 

@@ -1,13 +1,11 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Footer from './components/Footer.jsx';
 import BackToTop from './components/BackToTop.jsx';
-import Overview from './pages/Overview.jsx';
+import Landing from './pages/Landing.jsx';
 import Methodology from './pages/Methodology.jsx';
 import Simulation from './pages/Simulation.jsx';
-import Interpretability from './pages/Interpretability.jsx';
-import Results from './pages/Results.jsx';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -23,11 +21,10 @@ export default function App() {
       <Navbar />
       <main className="relative z-10 pt-32 pb-24 text-foreground">
         <Routes>
-          <Route path="/"                  element={<Overview />} />
-          <Route path="/methodology"       element={<Methodology />} />
-          <Route path="/simulation"        element={<Simulation />} />
-          <Route path="/interpretability"  element={<Interpretability />} />
-          <Route path="/results"           element={<Results />} />
+          <Route path="/"            element={<Landing />} />
+          <Route path="/methodology" element={<Methodology />} />
+          <Route path="/simulation"  element={<Simulation />} />
+          <Route path="*"            element={<Navigate to="/" replace />} />
         </Routes>
       </main>
       <Footer />

@@ -314,10 +314,104 @@ class WarehouseSimulator:
         self._job_counter += 1
         return jid
 
+    # Time-varying composition profile — reflects realistic daily order-mix shifts
+    # observed in e-commerce fulfillment centres:
+    #   morning        (0-120 min):  overnight standard-order backlog → Type A dominant
+    #   mid-morning    (120-240):    diversifying mix — bulk Type B/C joins the floor
+    #   afternoon      (240-420):    heavy bulk (C, D) as truck deliveries concentrate
+    #   evening peak   (420-600):    same-day cut-off surge — Type E express dominates
+    # Values are anchor points; _get_composition_profile interpolates linearly
+    # between them so the distribution shifts smoothly rather than in hard steps.
+    # Refs: Bartholdi & Hackman (2019) §6; De Koster et al. (2007) EJOR 182(2);
+    #       Boysen et al. (2019) EJOR 277(2):396-411 — e-commerce warehousing patterns.
+    _COMPOSITION_PROFILE = [
+        (0.0,    {"A": 0.55, "B": 0.18, "C": 0.10, "D": 0.09, "E": 0.08}),
+        (120.0,  {"A": 0.45, "B": 0.22, "C": 0.13, "D": 0.10, "E": 0.10}),
+        (240.0,  {"A": 0.25, "B": 0.32, "C": 0.20, "D": 0.13, "E": 0.10}),
+        (360.0,  {"A": 0.15, "B": 0.25, "C": 0.30, "D": 0.20, "E": 0.10}),
+        (480.0,  {"A": 0.12, "B": 0.18, "C": 0.22, "D": 0.13, "E": 0.35}),
+        (600.0,  {"A": 0.10, "B": 0.14, "C": 0.12, "D": 0.08, "E": 0.56}),
+    ]
+
+    # Composition noise: Gaussian perturbation σ applied per component, then
+    # renormalised to sum to 1. Keeps the profile from being artificially smooth
+    # while preserving the overall daily trend. Low enough (σ=0.03) that no single
+    # solver is accidentally favoured by random fluctuations.
+    _COMPOSITION_NOISE_SIGMA = 0.03
+
+    # Intraday arrival-rate multiplier anchors (time in minutes from shift start).
+    # Bimodal curve with a mild morning plateau, lunch dip, and a strong evening
+    # peak reflecting the same-day cut-off surge that is characteristic of
+    # e-commerce fulfilment centres. Values are interpolated linearly between
+    # anchors and a small multiplicative noise band is applied per sample.
+    # Refs: Boysen et al. (2019) EJOR 277(2); Bartholdi & Hackman (2019) §2.3;
+    #       De Koster et al. (2007) EJOR 182(2) — workload profiles in DCs.
+    _SURGE_PROFILE = [
+        (0.0,   0.55),   # shift start — overnight backlog, still warming up
+        (60.0,  0.95),   # morning ramp complete
+        (120.0, 1.05),   # morning baseline
+        (180.0, 1.15),   # pre-lunch mild peak
+        (240.0, 0.60),   # lunch dip (productivity drop)
+        (300.0, 0.95),   # post-lunch recovery
+        (360.0, 1.20),   # afternoon ramp
+        (420.0, 1.45),   # approaching evening peak
+        (480.0, 1.65),   # evening peak — same-day cut-off surge
+        (540.0, 1.50),   # late evening (still elevated)
+        (600.0, 1.30),   # shift close (slight taper)
+    ]
+    # Multiplicative noise band applied per surge evaluation; keeps arrivals
+    # stochastic without systematically biasing any heuristic.
+    _SURGE_NOISE_LO = 0.93
+    _SURGE_NOISE_HI = 1.07
+
+    def _get_composition_profile(self, t: float) -> Dict[str, float]:
+        """Per-type probability vector at time t.
+
+        If the caller supplied explicit ``job_type_frequencies`` (used by
+        calibration tests and heuristic-biased presets) those are returned
+        verbatim. Otherwise the profile is **linearly interpolated** between the
+        anchor points in ``_COMPOSITION_PROFILE`` and a small Gaussian noise
+        term is added so the distribution is not artificially deterministic.
+        The noisy vector is clipped to be non-negative and renormalised to 1.
+        """
+        if self._job_type_frequencies:
+            return dict(self._job_type_frequencies)
+
+        types = ("A", "B", "C", "D", "E")
+
+        # Find the two anchor points bracketing t
+        anchors = self._COMPOSITION_PROFILE
+        if t <= anchors[0][0]:
+            base = anchors[0][1]
+        elif t >= anchors[-1][0]:
+            base = anchors[-1][1]
+        else:
+            base = anchors[0][1]
+            for (t_a, p_a), (t_b, p_b) in zip(anchors[:-1], anchors[1:]):
+                if t_a <= t < t_b:
+                    alpha = (t - t_a) / max(t_b - t_a, 1e-9)
+                    base = {k: (1 - alpha) * p_a[k] + alpha * p_b[k] for k in types}
+                    break
+
+        # Stochastic perturbation for realism (seeded via self.rng).
+        if self._COMPOSITION_NOISE_SIGMA > 0:
+            noisy = {
+                k: max(0.0, base[k] + float(self.rng.normal(0.0, self._COMPOSITION_NOISE_SIGMA)))
+                for k in types
+            }
+            total = sum(noisy.values())
+            if total > 0:
+                return {k: v / total for k, v in noisy.items()}
+        return dict(base)
+
     def _sample_job_type(self) -> str:
+        profile = self._get_composition_profile(self.env.now)
         types = list(self.job_types.keys())
-        weights = [self.job_types[t].frequency for t in types]
+        weights = [profile.get(t, self.job_types[t].frequency) for t in types]
         total = sum(weights)
+        if total <= 0:
+            weights = [self.job_types[t].frequency for t in types]
+            total = sum(weights)
         probs = [w / total for w in weights]
         return self.rng.choice(types, p=probs)
 
@@ -336,22 +430,37 @@ class WarehouseSimulator:
             priority=3 if job_type_name == "E" else 1,
         )
 
+    def _surge_base_rate(self, current_time: float) -> float:
+        """Deterministic trend value of the surge multiplier at time ``t``.
+
+        Pure anchor-point interpolation — no RNG calls, so this is safe to
+        invoke from informational paths (state snapshots, feature extraction)
+        without disturbing the arrival-process sample stream.
+        """
+        anchors = self._SURGE_PROFILE
+        if current_time <= anchors[0][0]:
+            return float(anchors[0][1])
+        if current_time >= anchors[-1][0]:
+            return float(anchors[-1][1])
+        for (t_a, v_a), (t_b, v_b) in zip(anchors[:-1], anchors[1:]):
+            if t_a <= current_time < t_b:
+                alpha = (current_time - t_a) / max(t_b - t_a, 1e-9)
+                return float((1.0 - alpha) * v_a + alpha * v_b)
+        return float(anchors[-1][1])
+
     def _get_surge_multiplier(self, current_time: float) -> float:
-        """Time-of-day arrival rate multiplier (time in minutes from shift start)."""
-        if current_time < 60:       # 0-60 min: ramp up
-            return 0.7 + 0.3 * (current_time / 60)
-        elif current_time < 180:    # 60-180 min: morning surge
-            return 1.4
-        elif current_time < 240:    # 180-240 min: moderate
-            return 1.0
-        elif current_time < 300:    # 240-300 min: lunch dip
-            return 0.7
-        elif current_time < 420:    # 300-420 min: afternoon surge
-            return 1.3
-        elif current_time < 540:    # 420-540 min: steady
-            return 1.1
-        else:                       # 540-600 min: end-of-day wind-down
-            return 0.8
+        """Time-of-day arrival-rate multiplier (t in minutes from shift start).
+
+        The curve is a linear interpolation between the anchor points in
+        ``_SURGE_PROFILE`` plus a small multiplicative noise term drawn from
+        ``U(_SURGE_NOISE_LO, _SURGE_NOISE_HI)`` — so the instantaneous rate is
+        both deterministically trended (bimodal with evening peak) and
+        stochastically perturbed each time the process samples an arrival.
+        Returns a strictly positive multiplier.
+        """
+        base = self._surge_base_rate(current_time)
+        noise = float(self.rng.uniform(self._SURGE_NOISE_LO, self._SURGE_NOISE_HI))
+        return max(0.05, base * noise)
 
     def _record_queue_snapshot(self) -> None:
         snapshot = {z: len(q) for z, q in self.zone_queues.items()}
@@ -620,10 +729,12 @@ class WarehouseSimulator:
             "zoneActiveCounts": zone_active,
             "metrics": {
                 "completed":      n,
+                "completedJobs":  n,
                 "totalTardiness": round(total_tard, 1),
                 "slaBreachRate":  round(sla, 4),
                 "avgCycleTime":   round(avg_cycle, 2),
                 "throughput":     round(throughput, 2),
+                "jobsPerHour":    round(throughput, 2),
             },
         }
 
@@ -709,7 +820,7 @@ class WarehouseSimulator:
             },
             "n_broken_stations": n_broken,
             "lunch_active": self._lunch_active,
-            "surge_multiplier": self._get_surge_multiplier(now),
+            "surge_multiplier": self._surge_base_rate(now),
             "completed_so_far": len(self.completed_jobs),
             "waiting_jobs": waiting_jobs,
             "completed_jobs": self.completed_jobs,

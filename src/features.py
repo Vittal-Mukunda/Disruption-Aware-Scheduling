@@ -1,9 +1,9 @@
 """
 features.py — Feature Extraction for Hybrid Warehouse Scheduler
 
-Implements a stateful FeatureExtractor that computes 29 features split into:
-  - 22 scenario-level features describing system-wide state
-       (including 4 disruption-aware features for adaptive scheduling)
+Implements a stateful FeatureExtractor that computes 39 features split into:
+  - 32 scenario-level features describing system-wide state
+       (including 4 disruption-aware + 10 composition-adaptive novel features)
   -  7 job-level features for per-job priority prediction
 
 NEW in DAHS_2:
@@ -51,6 +51,17 @@ SCENARIO_FEATURE_NAMES: List[str] = [
     "queue_imbalance",
     "job_mix_entropy",
     "time_pressure_ratio",
+    # Composition-adaptive features (novel contribution, DAHS 2.1)
+    "pct_type_A",
+    "pct_type_B",
+    "pct_type_C",
+    "pct_type_D",
+    "pct_type_E",
+    "count_type_A",
+    "count_type_B",
+    "count_type_C",
+    "count_type_D",
+    "count_type_E",
 ]
 
 JOB_FEATURE_NAMES: List[str] = [
@@ -86,6 +97,16 @@ FEATURE_DESCRIPTIONS = {
     "queue_imbalance": "[NOVEL] Coefficient of variation of queue sizes across zones",
     "job_mix_entropy": "[NOVEL] Shannon entropy of job-type distribution in queue",
     "time_pressure_ratio": "[NOVEL] Fraction of waiting jobs with Critical Ratio < 1",
+    "pct_type_A": "[NOVEL] Fraction of waiting jobs of type A (standard)",
+    "pct_type_B": "[NOVEL] Fraction of waiting jobs of type B (picking-intensive)",
+    "pct_type_C": "[NOVEL] Fraction of waiting jobs of type C (value-add)",
+    "pct_type_D": "[NOVEL] Fraction of waiting jobs of type D (complex/bulk)",
+    "pct_type_E": "[NOVEL] Fraction of waiting jobs of type E (express)",
+    "count_type_A": "[NOVEL] Absolute count of waiting type-A jobs",
+    "count_type_B": "[NOVEL] Absolute count of waiting type-B jobs",
+    "count_type_C": "[NOVEL] Absolute count of waiting type-C jobs",
+    "count_type_D": "[NOVEL] Absolute count of waiting type-D jobs",
+    "count_type_E": "[NOVEL] Absolute count of waiting type-E jobs",
 }
 
 # Job type → integer encoding
@@ -133,7 +154,10 @@ class FeatureExtractor:
     # ------------------------------------------------------------------
 
     def extract_scenario_features(self, sim_state: Dict[str, Any]) -> np.ndarray:
-        """Extract 22 scenario-level features from a system state snapshot.
+        """Extract 32 scenario-level features from a system state snapshot.
+
+        22 system-state features (F1-F22, including 4 disruption-aware novel)
+        + 10 composition-adaptive features (F23-F32, novel in DAHS 2.1).
 
         Parameters
         ----------
@@ -142,7 +166,7 @@ class FeatureExtractor:
 
         Returns
         -------
-        np.ndarray of shape (22,)
+        np.ndarray of shape (32,)
         """
         now: float = sim_state.get("current_time", 0.0)
         waiting_jobs: List[Any] = sim_state.get("waiting_jobs", [])
@@ -275,6 +299,20 @@ class FeatureExtractor:
         else:
             time_pressure_ratio = 0.0
 
+        # F23-F32: composition-adaptive features (per-type % and absolute counts)
+        # These give the selector explicit, non-lossy signal about the current
+        # batch composition — crucial for heuristic adaptation.
+        type_counts: Dict[str, int] = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
+        for j in waiting_jobs:
+            if j.job_type in type_counts:
+                type_counts[j.job_type] += 1
+        total_w = max(len(waiting_jobs), 1)
+        pct_A = type_counts["A"] / total_w if waiting_jobs else 0.0
+        pct_B = type_counts["B"] / total_w if waiting_jobs else 0.0
+        pct_C = type_counts["C"] / total_w if waiting_jobs else 0.0
+        pct_D = type_counts["D"] / total_w if waiting_jobs else 0.0
+        pct_E = type_counts["E"] / total_w if waiting_jobs else 0.0
+
         features = np.array([
             n_in_system,      # F1
             n_express_pct,    # F2
@@ -298,6 +336,16 @@ class FeatureExtractor:
             queue_imbalance,        # F20 (novel)
             job_mix_entropy,        # F21 (novel)
             time_pressure_ratio,    # F22 (novel)
+            pct_A,                  # F23 (novel)
+            pct_B,                  # F24 (novel)
+            pct_C,                  # F25 (novel)
+            pct_D,                  # F26 (novel)
+            pct_E,                  # F27 (novel)
+            float(type_counts["A"]),# F28 (novel)
+            float(type_counts["B"]),# F29 (novel)
+            float(type_counts["C"]),# F30 (novel)
+            float(type_counts["D"]),# F31 (novel)
+            float(type_counts["E"]),# F32 (novel)
         ], dtype=np.float64)
 
         # Sanitize: replace NaN/inf with safe values (training pipeline bug fix)

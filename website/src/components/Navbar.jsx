@@ -3,11 +3,9 @@ import { NavLink } from 'react-router-dom';
 import { FlaskConical, Menu, X } from 'lucide-react';
 
 const NAV_LINKS = [
-  { to: '/',                label: 'Overview'          },
-  { to: '/methodology',     label: 'Methodology'       },
-  { to: '/simulation',      label: 'Simulation'        },
-  { to: '/interpretability',label: 'Interpretability'  },
-  { to: '/results',         label: 'Results'           },
+  { to: '/',            label: 'Home'        },
+  { to: '/methodology', label: 'Methodology' },
+  { to: '/simulation',  label: 'Simulation'  },
 ];
 
 export default function Navbar() {

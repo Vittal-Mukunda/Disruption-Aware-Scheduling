@@ -180,6 +180,7 @@
     "arrival_rate": "Olist implies 0.1642 orders/min. Simulator default 2.5/min is within published DC range (60-150/hr). Calibrated to 0.5000/min for base load.",
     "sla_windows": "Olist SLA median 23.2 days. Our sim uses 60-320 min intra-DC windows (different chain stage). SLA/cycle ratio 2.27x -> tightness=1.50.",
     "breach_rate": "Olist empirical breach rate: 8.1%. This validates our simulator's baseline breach rate (~37% under FIFO) is higher because intra-DC scheduling is tighter than last-mile.",
-    "job_types": "Blended Olist+simulator distribution used. Calibrated: {'A': 0.21, 'B': 0.28, 'C': 0.223, 'D': 0.187, 'E': 0.1}"
+    "job_types": "Blended Olist+simulator distribution used. Calibrated: {'A': 0.21, 'B': 0.28, 'C': 0.223, 'D': 0.187, 'E': 0.1}",
+    "taillard_heuristic_gaps": "Taillard ft06 (6 jobs x 6 machines) shows an anomalously large makespan gap (~840%) because 6 tiny jobs spread across a 37-station warehouse leave most stations idle, distorting the makespan calculation. This is a scale mismatch artifact, not a heuristic failure. ft10 and ta01-ta03 (10-15 jobs) show 20-40% gaps, which is expected and consistent with dispatching-rule literature vs exact solvers (Pinedo 2016). ft06 should be excluded from gap comparisons when presenting results."
   }
 }

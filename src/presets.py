@@ -1,6 +1,26 @@
 """
-presets.py — Heuristic-Biased Preset Scenarios for DAHS_2 Proof-of-Concept
-Port from DAHS_1 with updated imports.
+presets.py — Static-Solver Comparison Presets for DAHS_2
+
+Each preset pins a single classical dispatch rule (FIFO, Priority-EDD, …) that
+runs for the full 600-minute shift. The stress environment is the same realistic,
+literature-calibrated workload used everywhere else in the project:
+
+  - Time-varying job-type composition (morning Type-A dominant → afternoon bulk
+    B/C/D → evening Type-E express surge), simulator._COMPOSITION_PROFILE.
+  - Bimodal intraday arrival-rate curve with a lunch dip and an evening peak,
+    simulator._SURGE_PROFILE.
+  - Per-type processing-time lognormal variability (CV ≈ 30 %) and Poisson
+    arrivals, all stochastic.
+
+Presets intentionally do **not** override job_type_frequencies: the workload is
+identical across presets and DAHS, so the only experimental variable is the
+dispatch strategy itself. This rules out composition bias as an explanation for
+any performance gap and makes the static-solver-vs-DAHS comparison a clean
+controlled experiment.
+
+Presets differ in operational stress parameters (arrival rate, breakdown rate,
+batch size, deadline tightness, processing-time scale) so the static-solver
+comparison is tested across a range of realistic operating regimes.
 """
 
 from __future__ import annotations
@@ -25,7 +45,13 @@ HEURISTIC_LABELS = ["FIFO", "Priority-EDD", "Critical-Ratio", "ATC", "WSPT", "Sl
 
 @dataclass
 class PresetScenario:
-    """A simulator configuration tuned to favor one specific heuristic."""
+    """A 600-min single-solver scenario used as a static baseline against DAHS.
+
+    The solver named by ``favored_heuristic`` runs for the entire shift. The
+    workload composition is always the realistic time-varying profile embedded
+    in the simulator — this preset only configures stress parameters
+    (arrival rate, breakdowns, deadline tightness, etc.).
+    """
     name: str
     description: str
     favored_heuristic: str
@@ -37,6 +63,10 @@ class PresetScenario:
     batch_arrival_size: int = 30
     lunch_penalty_factor: float = 1.3
 
+    # Kept for API compatibility. Presets leave this empty so the simulator
+    # falls through to its realistic time-varying _COMPOSITION_PROFILE.
+    # Setting a non-empty dict here would override the profile and reintroduce
+    # composition bias — intentionally avoided.
     job_type_frequencies: Dict[str, float] = field(default_factory=dict)
     due_date_tightness: float = 1.0
     processing_time_scale: float = 1.0
@@ -45,10 +75,10 @@ class PresetScenario:
 
 PRESETS: List[PresetScenario] = [
 
-    # ── Preset 1: FIFO ──────────────────────────────────────────────────────
+    # ── Preset 1: FIFO — light, low-disruption baseline ─────────────────────
     PresetScenario(
         name="Preset-1-FIFO",
-        description="All uniform Type-C jobs, no breakdowns, generous deadlines",
+        description="Light steady flow, no breakdowns, generous deadlines — FIFO runs for the full 600 min",
         favored_heuristic="fifo",
         favored_heuristic_idx=0,
         seed=200_001,
@@ -56,20 +86,20 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.0,
         batch_arrival_size=10,
         lunch_penalty_factor=1.0,
-        job_type_frequencies={"A": 0.0, "B": 0.0, "C": 1.0, "D": 0.0, "E": 0.0},
         due_date_tightness=2.5,
         processing_time_scale=1.0,
         why_it_favors=(
-            "Homogeneous jobs: identical weights, routes, and processing times. "
-            "No urgency differentiation means every other heuristic's signals are noise. "
-            "FIFO's stability prevents oscillation."
+            "Light load with loose deadlines and no disruptions — a regime where "
+            "FIFO's simplicity is hard to beat. Runs on the same realistic "
+            "time-varying package mix (A-dominant morning → B/C/D bulk afternoon → "
+            "Type-E express evening) as every other arm."
         ),
     ),
 
-    # ── Preset 2: Priority-EDD ───────────────────────────────────────────────
+    # ── Preset 2: Priority-EDD — tight deadlines, frequent express orders ──
     PresetScenario(
         name="Preset-2-Priority-EDD",
-        description="40% express orders, tight deadlines, diverse job types",
+        description="Tight deadlines with frequent express orders — Priority-EDD runs for the full 600 min",
         favored_heuristic="priority_edd",
         favored_heuristic_idx=1,
         seed=200_002,
@@ -77,20 +107,20 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.001,
         batch_arrival_size=20,
         lunch_penalty_factor=1.1,
-        job_type_frequencies={"A": 0.30, "B": 0.15, "C": 0.10, "D": 0.05, "E": 0.40},
         due_date_tightness=0.65,
         processing_time_scale=1.0,
         why_it_favors=(
-            "40% express orders create strong urgency stratification. "
-            "Tight due dates reward sorting by (priority class, due_date) — "
-            "the exact signal Priority-EDD exploits."
+            "Tight deadlines give Priority-EDD a natural edge: sorting by "
+            "(priority class, due date) captures urgency directly. Workload is "
+            "the same realistic A→E daily profile — any advantage comes from "
+            "the dispatch rule, not from a biased job mix."
         ),
     ),
 
-    # ── Preset 3: Critical Ratio ─────────────────────────────────────────────
+    # ── Preset 3: Critical Ratio — frequent station breakdowns ─────────────
     PresetScenario(
         name="Preset-3-CR",
-        description="High breakdown rate, time-pressure varies widely across jobs",
+        description="Frequent station breakdowns on a realistic workload — Critical-Ratio runs for the full 600 min",
         favored_heuristic="critical_ratio",
         favored_heuristic_idx=2,
         seed=200_003,
@@ -98,20 +128,20 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.018,
         batch_arrival_size=20,
         lunch_penalty_factor=1.2,
-        job_type_frequencies={"A": 0.25, "B": 0.30, "C": 0.20, "D": 0.15, "E": 0.10},
         due_date_tightness=0.85,
         processing_time_scale=1.0,
         why_it_favors=(
-            "Frequent breakdowns continuously shift individual job CRs. "
-            "CR dispatch adapts every decision to current urgency ratios; "
-            "static heuristics miss this real-time information."
+            "Frequent breakdowns make static urgency scores go stale. "
+            "Critical-Ratio = (due_date − now) / remaining_proc_time is "
+            "recomputed every dispatch, so it tracks live time pressure. "
+            "The arrival stream is the realistic time-varying one."
         ),
     ),
 
-    # ── Preset 4: ATC ────────────────────────────────────────────────────────
+    # ── Preset 4: ATC — heavy load, morning surge ──────────────────────────
     PresetScenario(
         name="Preset-4-ATC",
-        description="Heavy load, morning surge, high batch size, weighted tardiness",
+        description="Heavy sustained load with high-weight jobs — ATC runs for the full 600 min",
         favored_heuristic="atc",
         favored_heuristic_idx=3,
         seed=200_004,
@@ -119,20 +149,20 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.003,
         batch_arrival_size=50,
         lunch_penalty_factor=1.4,
-        job_type_frequencies={"A": 0.30, "B": 0.30, "C": 0.15, "D": 0.10, "E": 0.15},
         due_date_tightness=0.55,
         processing_time_scale=1.0,
         why_it_favors=(
-            "Sustained heavy load + high-weight jobs require joint weight-urgency "
-            "optimization. ATC's (w/p) * exp(-slack / K*p_avg) term correctly "
-            "balances these under congestion."
+            "Sustained heavy load needs joint weight–urgency optimisation. "
+            "ATC's (w/p)·exp(−slack/K·p̄) closed form is near-optimal for "
+            "weighted tardiness under congestion. Workload composition follows "
+            "the realistic daily profile — no preset-specific mix."
         ),
     ),
 
-    # ── Preset 5: WSPT ───────────────────────────────────────────────────────
+    # ── Preset 5: WSPT — short jobs, loose deadlines, throughput focus ─────
     PresetScenario(
         name="Preset-5-WSPT",
-        description="Many short express jobs, relaxed deadlines, steady throughput focus",
+        description="Short-jobs-dominate regime with loose deadlines — WSPT runs for the full 600 min",
         favored_heuristic="wspt",
         favored_heuristic_idx=4,
         seed=200_005,
@@ -140,20 +170,20 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.001,
         batch_arrival_size=15,
         lunch_penalty_factor=1.0,
-        job_type_frequencies={"A": 0.15, "B": 0.10, "C": 0.05, "D": 0.05, "E": 0.65},
         due_date_tightness=2.0,
         processing_time_scale=0.7,
         why_it_favors=(
-            "Predominantly short, high-weight express jobs with loose deadlines. "
-            "WSPT is provably optimal for minimizing weighted flow time on a "
-            "single machine — generalises well to this multi-machine scenario."
+            "Processing times scaled down 30 % give short jobs on loose deadlines "
+            "— the regime where Smith's weighted-shortest-processing-time rule "
+            "is provably optimal for minimising weighted flow time. The arrival "
+            "composition is the realistic time-varying profile."
         ),
     ),
 
-    # ── Preset 6: Slack ──────────────────────────────────────────────────────
+    # ── Preset 6: Slack — recovery mode, very tight deadlines ──────────────
     PresetScenario(
         name="Preset-6-Slack",
-        description="Large initial backlog, very tight deadlines, recovery mode",
+        description="Recovery mode with very tight deadlines — Slack runs for the full 600 min",
         favored_heuristic="slack",
         favored_heuristic_idx=5,
         seed=200_006,
@@ -161,20 +191,23 @@ PRESETS: List[PresetScenario] = [
         breakdown_prob=0.002,
         batch_arrival_size=60,
         lunch_penalty_factor=1.2,
-        job_type_frequencies={"A": 0.30, "B": 0.30, "C": 0.20, "D": 0.15, "E": 0.05},
         due_date_tightness=0.30,
         processing_time_scale=1.2,
         why_it_favors=(
-            "Extreme deadline tightness forces recovery logic. Slack (remaining "
-            "margin = due - now - remaining_proc) correctly identifies which "
-            "jobs can still be saved vs. which are already lost."
+            "Extreme deadline tightness triggers recovery behaviour. Slack "
+            "= due_date − now − remaining_proc_time identifies which jobs can "
+            "still be saved versus which are already lost. Workload is the "
+            "realistic daily profile; stress comes from deadlines and batch size."
         ),
     ),
 
-    # ── Preset 7: Real-Data Calibrated (Olist) ───────────────────────────────
+    # ── Preset 7: Real-Data Calibrated (Olist) — stress params only ────────
     PresetScenario(
         name="Preset-7-RealData",
-        description="Parameters calibrated from Olist Brazilian E-Commerce dataset (96,478 real orders, 2016-2018)",
+        description=(
+            "Stress parameters calibrated from Olist Brazilian E-Commerce "
+            "dataset (96,478 real orders, 2016-2018) — WSPT runs for the full 600 min"
+        ),
         favored_heuristic="wspt",
         favored_heuristic_idx=4,
         seed=200_007,
@@ -189,19 +222,16 @@ PRESETS: List[PresetScenario] = [
         # scaled to warehouse batch size range — Bartholdi & Hackman (2019)
         batch_arrival_size=15,
         lunch_penalty_factor=1.2,
-        # job_type_frequencies: blended from Olist price-quantile distribution
-        # (E=top 10%, A=75-90th pct, B=50-75th, C=25-50th, D=bottom 25%)
-        # blended 40% Olist + 60% simulator defaults for stability
-        job_type_frequencies={"A": 0.210, "B": 0.280, "C": 0.223, "D": 0.187, "E": 0.100},
         # due_date_tightness: derived from Olist SLA/cycle ratio (23.2d / 10.2d = 2.27)
         # mapped to simulator scale: 1.5x gives comparable SLA pressure
         due_date_tightness=1.5,
         processing_time_scale=1.0,
         why_it_favors=(
-            "Calibrated from 96,478 real Olist orders (2016-2018). Moderate arrival "
-            "rate (30/hr), balanced job mix (10% express, 28% standard), and relaxed "
-            "deadlines (tightness=1.5x) favour WSPT — short high-value jobs clear "
-            "faster, matching the empirical Olist SLA breach rate of 8.1%."
+            "Operational parameters (arrival rate 30/hr, batch size 15, "
+            "deadline tightness 1.5×) are calibrated from 96,478 real Olist "
+            "orders. Package composition still follows the realistic "
+            "time-varying profile so there is no composition bias. WSPT is the "
+            "static baseline for this operating regime."
         ),
     ),
 ]
@@ -219,7 +249,7 @@ def get_preset(name: str) -> PresetScenario:
 
 
 def get_all_presets() -> List[PresetScenario]:
-    """Return all 6 preset scenario configs."""
+    """Return all preset scenario configs."""
     return list(PRESETS)
 
 
@@ -338,7 +368,7 @@ def run_preset_demo(
 
 
 def run_all_preset_demos(duration: float = 600.0) -> List[Dict[str, Any]]:
-    """Run all 6 preset demos and print a summary table."""
+    """Run all preset demos and print a summary table."""
     all_results = []
     print("\n" + "=" * 72)
     print("  DAHS_2 PRESET PROOF-OF-CONCEPT EVALUATION")
@@ -350,7 +380,7 @@ def run_all_preset_demos(duration: float = 600.0) -> List[Dict[str, Any]]:
         result = run_preset_demo(preset, duration=duration)
         all_results.append(result)
 
-        match_str = "✓" if result["correct"] else "✗"
+        match_str = "OK" if result["correct"] else "--"
         dahs_str = result["dahs_selected"] or "N/A"
         print(f"  {preset.name:<26} {preset.favored_heuristic:>14} "
               f"{result['winner']:>17} {match_str:>6} {dahs_str:>12}")

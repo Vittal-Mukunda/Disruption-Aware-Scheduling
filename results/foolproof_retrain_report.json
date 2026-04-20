@@ -1,0 +1,280 @@
+{
+  "preset_wins": 5,
+  "random_wins": 3,
+  "preset_floor": 5,
+  "random_floor": 18,
+  "promoted": false,
+  "preset_rows": [
+    {
+      "preset": "Preset-1-FIFO",
+      "favored": "fifo",
+      "baseline_tardiness": 0.0,
+      "dahs_tardiness": 0.0,
+      "wins": true
+    },
+    {
+      "preset": "Preset-2-Priority-EDD",
+      "favored": "priority_edd",
+      "baseline_tardiness": 23082.309413484232,
+      "dahs_tardiness": 20211.539163965048,
+      "wins": true
+    },
+    {
+      "preset": "Preset-3-CR",
+      "favored": "critical_ratio",
+      "baseline_tardiness": 29476.653065899627,
+      "dahs_tardiness": 10872.041425812567,
+      "wins": true
+    },
+    {
+      "preset": "Preset-4-ATC",
+      "favored": "atc",
+      "baseline_tardiness": 8511.868113104169,
+      "dahs_tardiness": 10138.127586537743,
+      "wins": false
+    },
+    {
+      "preset": "Preset-5-WSPT",
+      "favored": "wspt",
+      "baseline_tardiness": 2272.0648769735317,
+      "dahs_tardiness": 20910.578712223156,
+      "wins": false
+    },
+    {
+      "preset": "Preset-6-Slack",
+      "favored": "slack",
+      "baseline_tardiness": 47949.67517409072,
+      "dahs_tardiness": 18465.473661617852,
+      "wins": true
+    },
+    {
+      "preset": "Preset-7-RealData",
+      "favored": "wspt",
+      "baseline_tardiness": 0.0,
+      "dahs_tardiness": 0.0,
+      "wins": true
+    }
+  ],
+  "random_rows": [
+    {
+      "seed": 0,
+      "fifo": 31214.004680322407,
+      "priority_edd": 20408.671951943226,
+      "critical_ratio": 33399.06877193374,
+      "atc": 19437.697050380462,
+      "wspt": 13140.230650124378,
+      "slack": 29477.1821990713,
+      "dahs_priority": 12004.451733166996,
+      "wins": true
+    },
+    {
+      "seed": 1,
+      "fifo": 31342.110096522454,
+      "priority_edd": 26298.910727102448,
+      "critical_ratio": 34323.53887959989,
+      "atc": 14591.382121505876,
+      "wspt": 9252.137138373195,
+      "slack": 33993.454085992715,
+      "dahs_priority": 14002.852985408035,
+      "wins": false
+    },
+    {
+      "seed": 2,
+      "fifo": 33255.62691050673,
+      "priority_edd": 16229.04535365384,
+      "critical_ratio": 31095.187779398308,
+      "atc": 8454.879539786229,
+      "wspt": 9189.834597407274,
+      "slack": 33288.403454283165,
+      "dahs_priority": 12821.387829016538,
+      "wins": false
+    },
+    {
+      "seed": 3,
+      "fifo": 32570.01012991821,
+      "priority_edd": 20771.2082001821,
+      "critical_ratio": 33970.48223044293,
+      "atc": 13068.026201207516,
+      "wspt": 11296.64465637966,
+      "slack": 32851.280264443274,
+      "dahs_priority": 17018.4729767803,
+      "wins": false
+    },
+    {
+      "seed": 4,
+      "fifo": 30197.59012056989,
+      "priority_edd": 20040.7190398037,
+      "critical_ratio": 33476.70788029631,
+      "atc": 15820.924026873521,
+      "wspt": 9766.172729631002,
+      "slack": 32354.7768851802,
+      "dahs_priority": 16824.12765917628,
+      "wins": false
+    },
+    {
+      "seed": 5,
+      "fifo": 31012.499004704063,
+      "priority_edd": 17149.838809302477,
+      "critical_ratio": 30328.46984652325,
+      "atc": 17312.145243519702,
+      "wspt": 16572.89837390861,
+      "slack": 32259.236515156652,
+      "dahs_priority": 18888.60754378553,
+      "wins": false
+    },
+    {
+      "seed": 6,
+      "fifo": 32832.90421444526,
+      "priority_edd": 26387.351580427472,
+      "critical_ratio": 30220.811819530525,
+      "atc": 12174.675514243156,
+      "wspt": 13682.473811058175,
+      "slack": 36313.4252299743,
+      "dahs_priority": 16233.6385757327,
+      "wins": false
+    },
+    {
+      "seed": 7,
+      "fifo": 28979.677848986445,
+      "priority_edd": 19896.236953212665,
+      "critical_ratio": 31021.884410023482,
+      "atc": 12314.819050767199,
+      "wspt": 12241.722097709668,
+      "slack": 32339.432018506515,
+      "dahs_priority": 13227.655851509326,
+      "wins": false
+    },
+    {
+      "seed": 8,
+      "fifo": 31764.177362803144,
+      "priority_edd": 19442.404389720876,
+      "critical_ratio": 30858.653738330413,
+      "atc": 18690.227412252374,
+      "wspt": 13750.874733097626,
+      "slack": 31994.285646335953,
+      "dahs_priority": 17426.83257342058,
+      "wins": false
+    },
+    {
+      "seed": 9,
+      "fifo": 32744.329593270442,
+      "priority_edd": 22619.154150122213,
+      "critical_ratio": 33433.017142516575,
+      "atc": 10283.259970321422,
+      "wspt": 10964.830675391815,
+      "slack": 32342.6511112781,
+      "dahs_priority": 16234.184668968479,
+      "wins": false
+    },
+    {
+      "seed": 10,
+      "fifo": 27770.88645372311,
+      "priority_edd": 22103.67379827944,
+      "critical_ratio": 30680.70358336701,
+      "atc": 11024.678325210782,
+      "wspt": 14644.051436594216,
+      "slack": 34575.40385968541,
+      "dahs_priority": 15862.798148160628,
+      "wins": false
+    },
+    {
+      "seed": 11,
+      "fifo": 31780.235082523457,
+      "priority_edd": 17061.781201592898,
+      "critical_ratio": 29058.9223620718,
+      "atc": 10956.829875135476,
+      "wspt": 10777.077170796952,
+      "slack": 33105.45623520148,
+      "dahs_priority": 16543.47431555916,
+      "wins": false
+    },
+    {
+      "seed": 12,
+      "fifo": 28442.74082028088,
+      "priority_edd": 21288.519504906504,
+      "critical_ratio": 33226.105228849585,
+      "atc": 16106.92774390329,
+      "wspt": 11005.74340047689,
+      "slack": 33984.599125012835,
+      "dahs_priority": 14354.45919399411,
+      "wins": false
+    },
+    {
+      "seed": 13,
+      "fifo": 30114.504125906406,
+      "priority_edd": 19949.457283597592,
+      "critical_ratio": 34067.450310245375,
+      "atc": 13747.992944612892,
+      "wspt": 10084.261262469578,
+      "slack": 34925.451623607296,
+      "dahs_priority": 15648.501796093049,
+      "wins": false
+    },
+    {
+      "seed": 14,
+      "fifo": 31721.023473847174,
+      "priority_edd": 16340.895488705371,
+      "critical_ratio": 31323.98514509785,
+      "atc": 18658.425737032812,
+      "wspt": 12445.829231931215,
+      "slack": 30629.17895556556,
+      "dahs_priority": 9384.294281743158,
+      "wins": true
+    },
+    {
+      "seed": 15,
+      "fifo": 28299.151742165686,
+      "priority_edd": 19137.01954534864,
+      "critical_ratio": 34504.70276313975,
+      "atc": 10855.394908788578,
+      "wspt": 9234.295443317162,
+      "slack": 33912.61267858481,
+      "dahs_priority": 13178.45168622181,
+      "wins": false
+    },
+    {
+      "seed": 16,
+      "fifo": 31584.491427640954,
+      "priority_edd": 23187.98744067091,
+      "critical_ratio": 31241.494496334057,
+      "atc": 11222.879896018057,
+      "wspt": 14024.177994538122,
+      "slack": 32505.394446247636,
+      "dahs_priority": 18031.643970923877,
+      "wins": false
+    },
+    {
+      "seed": 17,
+      "fifo": 32161.752863986734,
+      "priority_edd": 18932.729123102472,
+      "critical_ratio": 28968.129516954294,
+      "atc": 16598.620606283206,
+      "wspt": 12968.661922958514,
+      "slack": 30739.51213192188,
+      "dahs_priority": 12026.287939725633,
+      "wins": true
+    },
+    {
+      "seed": 18,
+      "fifo": 28538.416005683885,
+      "priority_edd": 21792.06251767739,
+      "critical_ratio": 33290.846019911056,
+      "atc": 10124.40480944714,
+      "wspt": 8334.098160832154,
+      "slack": 33613.43441500065,
+      "dahs_priority": 10364.697724569172,
+      "wins": false
+    },
+    {
+      "seed": 19,
+      "fifo": 27492.162219799073,
+      "priority_edd": 16270.259714938216,
+      "critical_ratio": 31758.31328370093,
+      "atc": 14382.259851040079,
+      "wspt": 12616.4879010109,
+      "slack": 31051.34363779487,
+      "dahs_priority": 16074.944137826442,
+      "wins": false
+    }
+  ]
+}

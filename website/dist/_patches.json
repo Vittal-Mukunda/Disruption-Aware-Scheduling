@@ -1,0 +1,118 @@
+[
+  [
+    "12 methods, 20 random seeds, 7 engineered presets. Friedman → Wilcoxon → Holm → Cohen's d → bootstrap CI. Reproducible.",
+    "12 methods, 20 random seeds, 7 operating regimes (identical realistic workload — the static solver is the only variable). Friedman → Wilcoxon → Holm → Cohen's d → bootstrap CI. Reproducible."
+  ],
+  [
+    "Friedman → pairwise Wilcoxon → Holm-Bonferroni correction → Cohen's d → bootstrap 95% CI. 20 random seeds, 7 engineered presets, 12 methods compared.",
+    "Friedman → pairwise Wilcoxon → Holm-Bonferroni correction → Cohen's d → bootstrap 95% CI. 20 random seeds, 7 operating-regime presets (controlled experiment — identical realistic workload, only the static solver varies), 12 methods compared."
+  ],
+  [
+    "label:\"Engineered presets (heuristic-favoring)\"",
+    "label:\"Operating regimes (same realistic workload)\""
+  ],
+  [
+    "Two ways to test DAHS: pick from 7 engineered presets (each tuned to favor a specific specialist heuristic), or design your own scenario by setting the package mix and operational parameters yourself. The switching timeline below shows every decision the selector makes — live.",
+    "Two ways to test DAHS: pick from 7 operating regimes (each pairs a single classical solver with a realistic 600-minute shift), or design your own scenario by setting the package mix and operational parameters yourself. Every preset uses the same literature-calibrated time-varying workload (A-dominant morning → B/C/D bulk afternoon → Type-E express evening) — the only experimental variable is the dispatch rule. The switching timeline below shows every decision the selector makes — live."
+  ],
+  [
+    "{id:\"preset\",label:\"Engineered presets\",hint:\"Adversarial stress tests, each tuned to favor a specific specialist\"}",
+    "{id:\"preset\",label:\"Operating regimes\",hint:\"Seven stress scenarios — same realistic workload, different static solver as baseline\"}"
+  ],
+  [
+    "children:\"Engineered presets\"",
+    "children:\"Operating regimes\""
+  ],
+  [
+    "children:\"Pick one. Each is tuned to favor a specific heuristic — DAHS should still win on most.\"",
+    "children:\"Each preset pins one static solver for the full 600 min on the same realistic workload\""
+  ],
+  [
+    "children:[\"Favors: \",",
+    "children:[\"Static baseline: \","
+  ],
+  [
+    "children:\"Baseline — runs for the full 600 min\"",
+    "children:\"Static solver — runs for the full 600 min\""
+  ],
+  [
+    "children:\"Adversarial stress tests\"",
+    "children:\"Static-solver comparison\""
+  ],
+  [
+    "children:\"engineered presets won\"",
+    "children:\"operating regimes won\""
+  ],
+  [
+    "children:\"Best learned arm vs specialist (No Free Lunch on the other 2)\"",
+    "children:\"Best learned arm beats static solver on its own regime\""
+  ],
+  [
+    "The 7-preset table below is an adversarial stress test where each preset is hand-tuned to favor a specific specialist heuristic — DAHS still wins 5; the 2 it loses are presets where the specialist is ",
+    "The 7-preset table below is a controlled experiment — every preset uses the same realistic time-varying workload (A→E daily profile, literature-calibrated arrivals), with the only variable being the static solver that runs for 600 min. DAHS matches or beats the static baseline on most regimes; the few it loses are regimes where the static rule is "
+  ],
+  [
+    "(Smith's rule, ATC closed form).",
+    "(Smith's rule for WSPT, ATC's closed form for weighted tardiness)."
+  ],
+  [
+    "children:\"Adversarial stress test\"",
+    "children:\"Controlled experiment · 7 operating regimes\""
+  ],
+  [
+    "children:\"DAHS-Priority vs. each heuristic on its own home turf\"",
+    "children:\"DAHS vs. static solvers — same realistic workload, 600 min each\""
+  ],
+  [
+    "tracking-wider\",children:\"Specialist\"}),i.jsxs(\"th\"",
+    "tracking-wider\",children:\"Static solver\"}),i.jsxs(\"th\""
+  ],
+  [
+    "tracking-wider\",children:[\"Specialist\",i.jsx(\"br\",{}),i.jsx(\"span\",{className:\"text-muted-foreground font-normal text-[10px]\",children:\"tardiness\"}",
+    "tracking-wider\",children:[\"Static baseline\",i.jsx(\"br\",{}),i.jsx(\"span\",{className:\"text-muted-foreground font-normal text-[10px]\",children:\"tardiness\"}"
+  ],
+  [
+    "text-[10px]\",children:\"vs specialist\"",
+    "text-[10px]\",children:\"vs static\""
+  ],
+  [
+    "title:Qi?\"matches the specialist!\":\"\"",
+    "title:Qi?\"matches the regime's static solver\":\"\""
+  ],
+  [
+    "children:\"Wins (any learned arm beats specialist):\"",
+    "children:\"Wins (any learned arm beats the static solver):\""
+  ],
+  [
+    "children:\"How to read this:\"}),\" each row is an adversarial preset hand-tuned to favor one classical heuristic — the\",i.jsx(\"em\",{children:\" specialist\"}),\". We compare the specialist against two learned arms:\",i.jsx(\"strong\",{className:\"text-primary\",children:\" DAHS-Priority\"}),\" (a single fixed GBR that ranks every job) and the \",i.jsx(\"strong\",{className:\"text-accent\",children:\"Meta-selector\"}),'(BatchwiseSelector that picks one of 6 heuristics every 15 minutes). The \"Selector picked\" column shows which heuristics the meta-selector chose — look for the highlighted match (e.g. ',i.jsx(\"em\",{children:\"Preset-5\"}),\" picks WSPT 51/52 times, correctly identifying the regime).",
+    "children:\"How to read this:\"}),\" each row is an operating regime defined by stress parameters (arrival rate, breakdown rate, deadline tightness). Every row shares the same literature-calibrated time-varying workload — morning Type-A dominant, afternoon B/C/D bulk, evening Type-E express surge. The \",i.jsx(\"em\",{children:\"static solver\"}),\" runs for the full 600 min and is compared against two learned arms:\",i.jsx(\"strong\",{className:\"text-primary\",children:\" DAHS-Priority\"}),\" (a single fixed GBR that ranks every job) and the \",i.jsx(\"strong\",{className:\"text-accent\",children:\"Meta-selector\"}),'(BatchwiseSelector that picks one of 6 heuristics every 15 minutes). The \"Selector picked\" column shows which heuristics the meta-selector chose — a match with the static solver means DAHS correctly identified the regime on its own.'"
+  ],
+  [
+    "children:\"Honest interpretation of the 2 losses:\"}),\" on\",i.jsx(\"strong\",{children:\" Preset-4-ATC\"}),\" and \",i.jsx(\"strong\",{children:\"Preset-5-WSPT\"}),\", neither learned arm beats the specialist. This is \",i.jsx(\"strong\",{children:\"expected\"}),\": WSPT is",
+    "children:\"Honest interpretation of the losses:\"}),\" in the regimes where a static solver beats both learned arms, the static rule is \",i.jsx(\"em\",{children:\"provably optimal\"}),\" for that regime. WSPT is"
+  ],
+  [
+    "children:\"Honest disclaimer:\"}),\" if you push to extreme settings AND pick the matching specialist as baseline (e.g. apparel-only mix + WSPT), DAHS may lose — by the No Free Lunch theorem, no learned model beats a provably optimal heuristic in its own regime. Default settings (balanced mix + FIFO baseline) showcase DAHS's strength on realistic conditions.",
+    "children:\"Honest disclaimer:\"}),\" custom mode overrides the default realistic time-varying workload with whatever fixed mix you dial in. If you pick an extreme mix (e.g. 100% Type E) and pair it with the matching static solver (e.g. WSPT), DAHS may lose — by the No Free Lunch theorem, no learned model beats a provably optimal heuristic in its own regime. The preset tab (left) uses the realistic time-varying profile and is the fairer academic comparison."
+  ],
+  [
+    "className:\"grid grid-cols-3 gap-1.5 p-3\",children:[i.jsx(fn,{label:\"Tardiness\",value:be.totalTardiness",
+    "className:\"grid grid-cols-4 gap-1.5 p-3\",children:[i.jsx(fn,{label:\"Tardiness\",value:be.totalTardiness"
+  ],
+  [
+    "Completed\",value:be.completedJobs??0,color:\"text-slate-700\"})]",
+    "Completed\",value:be.completedJobs??0,color:\"text-slate-700\"}),i.jsx(fn,{label:\"Jobs/hr\",value:be.jobsPerHour??0,color:\"text-slate-700\",dp:1})]"
+  ],
+  [
+    "className:\"grid grid-cols-3 gap-1.5 p-3\",children:[i.jsx(fn,{label:\"Tardiness\",value:Ee.totalTardiness",
+    "className:\"grid grid-cols-4 gap-1.5 p-3\",children:[i.jsx(fn,{label:\"Tardiness\",value:Ee.totalTardiness"
+  ],
+  [
+    "Completed\",value:Ee.completedJobs??0,color:\"text-primary\"})]",
+    "Completed\",value:Ee.completedJobs??0,color:\"text-primary\"}),i.jsx(fn,{label:\"Jobs/hr\",value:Ee.jobsPerHour??0,color:\"text-primary\",dp:1})]"
+  ],
+  [
+    "Completed jobs\",baseVal:Qe.completedJobs??0,dahsVal:un.completedJobs??0,lowerIsBetter:!1,baseLabel:nt})]",
+    "Completed jobs\",baseVal:Qe.completedJobs??0,dahsVal:un.completedJobs??0,lowerIsBetter:!1,baseLabel:nt}),i.jsx(ol,{label:\"Jobs / hour\",baseVal:Qe.jobsPerHour??0,dahsVal:un.jobsPerHour??0,lowerIsBetter:!1,baseLabel:nt})]"
+  ]
+]

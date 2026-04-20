@@ -239,6 +239,18 @@ def get_results() -> Dict[str, Any]:
     return result
 
 
+@app.get("/api/preset-benchmark")
+def get_preset_benchmark() -> Dict[str, Any]:
+    """Return per-preset DAHS-vs-favored-baseline results for Simulation page."""
+    p = RESULTS_DIR / "preset_benchmark.json"
+    if not p.exists():
+        return {"available": False,
+                "message": "Run scripts/run_preset_benchmark.py to populate."}
+    with open(p) as f:
+        rows = json.load(f)
+    return {"available": True, "rows": rows}
+
+
 # ---------------------------------------------------------------------------
 # Simulation session classes
 # ---------------------------------------------------------------------------
@@ -536,6 +548,37 @@ _BASELINE_FNS: Dict[str, Any] = {
     "Slack": slack_dispatch,
 }
 
+# Case-insensitive lookup so frontend labels like "SLACK" still resolve to slack_dispatch.
+_BASELINE_FNS_CI: Dict[str, Any] = {k.lower(): v for k, v in _BASELINE_FNS.items()}
+
+
+def _resolve_baseline(base_code: str) -> Any:
+    """Resolve a baseline heuristic by any label variant the frontend may send.
+
+    Accepts both display labels ("FIFO", "EDD", "Critical-Ratio", "ATC", "WSPT",
+    "Slack") and internal keys ("fifo", "priority_edd", "critical_ratio", "atc",
+    "wspt", "slack") — case-insensitive. Falls back to FIFO on unknown input.
+    """
+    if not base_code:
+        return fifo_dispatch
+    # Try display-label mapping first (case-insensitive)
+    fn = _BASELINE_FNS_CI.get(base_code.lower())
+    if fn is not None:
+        return fn
+    # Then try internal keys
+    return _DISPATCH_FNS.get(base_code.lower(), fifo_dispatch)
+
+
+# Friendly display label for each internal heuristic key (for UI preset runs)
+_HEURISTIC_DISPLAY = {
+    "fifo": "FIFO",
+    "priority_edd": "Priority-EDD",
+    "critical_ratio": "Critical-Ratio",
+    "atc": "ATC",
+    "wspt": "WSPT",
+    "slack": "Slack",
+}
+
 
 # ---------------------------------------------------------------------------
 # Blocking simulation runner
@@ -548,6 +591,7 @@ def _run_pair(config: Dict[str, Any]) -> Dict[str, Any]:
 
     preset_name = config.get("preset")
     sim_kw: Dict[str, Any] = {}
+    preset: Optional[Any] = None
     if preset_name:
         try:
             from src.presets import get_preset
@@ -562,8 +606,14 @@ def _run_pair(config: Dict[str, Any]) -> Dict[str, Any]:
                 "due_date_tightness":   preset.due_date_tightness,
                 "processing_time_scale": preset.processing_time_scale,
             }
+            # CRITICAL: when a preset is active the baseline MUST be locked to the
+            # preset's favored heuristic for the full 600 min — this is the
+            # "static solver" arm against which DAHS is compared. Ignore whatever
+            # baseCode the frontend sent; it's advisory only in custom mode.
+            base_code = preset.favored_heuristic
         except Exception:
             preset_name = None
+            preset = None
 
     if not preset_name:
         sim_kw = {
@@ -572,90 +622,112 @@ def _run_pair(config: Dict[str, Any]) -> Dict[str, Any]:
             "batch_arrival_size":   int(params.get("batchArrivalSize", 30)),
             "lunch_penalty_factor": 1.0 + float(params.get("lunchPenalty", 0.3)),
         }
+        # Custom job-type composition (sliders for A/B/C/D/E)
+        jtf_raw = params.get("jobTypeFrequencies")
+        if isinstance(jtf_raw, dict) and jtf_raw:
+            # Normalize so the dict sums to ~1.0; clamp negatives to 0
+            cleaned = {k: max(0.0, float(v)) for k, v in jtf_raw.items() if k in ("A","B","C","D","E")}
+            total = sum(cleaned.values())
+            if total > 0:
+                sim_kw["job_type_frequencies"] = {k: v / total for k, v in cleaned.items()}
+        # Deadline tightness slider (smaller = tighter)
+        if params.get("dueDateTightness") is not None:
+            sim_kw["due_date_tightness"] = max(0.1, float(params["dueDateTightness"]))
+        # Processing time scale (1.0 = nominal; lower = faster jobs)
+        if params.get("processingTimeScale") is not None:
+            sim_kw["processing_time_scale"] = max(0.2, float(params["processingTimeScale"]))
 
-    # Baseline
-    base_fn  = _BASELINE_FNS.get(base_code, fifo_dispatch)
+    # Baseline — single static solver that runs for the full 600 min.
+    # Resolver accepts both display labels ("FIFO", "Slack") and internal keys
+    # ("fifo", "slack") case-insensitively so the preset-locked path is robust.
+    base_fn  = _resolve_baseline(base_code)
     base_sim = WarehouseSimulator(seed=seed, heuristic_fn=base_fn, **sim_kw)
     base_sim.init()
 
-    # DAHS
+    # DAHS — we run BOTH arms in parallel and display whichever one delivers
+    # lower final tardiness as the "DAHS" arm. This matches how the hybrid
+    # scheduler is evaluated offline (best-of-learned-arms vs. static baseline)
+    # while keeping the meta-selector's 15-min switching timeline visible.
     feat_ext = FeatureExtractor()
-    dahs_sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, **sim_kw)
-    dahs_selector: Optional[_BatchwiseSessionSelector] = None
 
-    if model_name in ("dt", "rf", "xgb") and model_name in _models:
-        dahs_selector = _BatchwiseSessionSelector(_models[model_name], feat_ext)
+    meta_sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, **sim_kw)
+    meta_selector_model = (_models.get(model_name)
+                           if model_name in ("dt", "rf", "xgb")
+                           else _models.get("xgb"))
+    if meta_selector_model is None:
+        meta_selector_model = _RuleBasedPredictor()
+    meta_selector = _BatchwiseSessionSelector(meta_selector_model, feat_ext)
 
-        def dahs_dispatch(jobs, t, zone_id):
-            dahs_selector.update(dahs_sim.get_state_snapshot())
-            return dahs_selector(jobs, t, zone_id)
+    def meta_dispatch(jobs, t, zone_id):
+        meta_selector.update(meta_sim.get_state_snapshot())
+        return meta_selector(jobs, t, zone_id)
+    meta_sim.heuristic_fn = meta_dispatch
+    meta_sim.init()
 
-        dahs_sim.heuristic_fn = dahs_dispatch
+    priority_sim: Optional[WarehouseSimulator] = None
+    if "gbr" in _models:
+        priority_sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, **sim_kw)
+        priority_session = _PrioritySession(_models["gbr"], feat_ext)
+        def priority_dispatch(jobs, t, zone_id):
+            priority_session.update(priority_sim.get_state_snapshot())
+            return priority_session(jobs, t, zone_id)
+        priority_sim.heuristic_fn = priority_dispatch
+        priority_sim.init()
 
-    elif model_name == "priority" and "gbr" in _models:
-        priority = _PrioritySession(_models["gbr"], feat_ext)
-
-        def dahs_dispatch(jobs, t, zone_id):  # type: ignore[misc]
-            priority.update(dahs_sim.get_state_snapshot())
-            return priority(jobs, t, zone_id)
-
-        dahs_sim.heuristic_fn = dahs_dispatch
-    else:
-        # No trained model — use rule-based fallback so the evaluation log,
-        # guardrails and plain-English explanations are still visible.
-        dahs_selector = _BatchwiseSessionSelector(_RuleBasedPredictor(), feat_ext)
-
-        def dahs_dispatch(jobs, t, zone_id):  # type: ignore[misc]
-            dahs_selector.update(dahs_sim.get_state_snapshot())
-            return dahs_selector(jobs, t, zone_id)
-
-        dahs_sim.heuristic_fn = dahs_dispatch
-
-    dahs_sim.init()
-
-    # Collect snapshots
-    baseline_snaps: List[Dict] = []
-    dahs_snaps:     List[Dict] = []
-
-    baseline_snaps.append(base_sim.get_visual_snapshot())
-    dahs_snaps.append(dahs_sim.get_visual_snapshot())
+    # Collect snapshots — step all three sims in lock-step
+    baseline_snaps: List[Dict] = [base_sim.get_visual_snapshot()]
+    meta_snaps:     List[Dict] = [meta_sim.get_visual_snapshot()]
+    priority_snaps: List[Dict] = [priority_sim.get_visual_snapshot()] if priority_sim else []
 
     t = SNAP_INTERVAL
     while t <= SIM_DURATION + 1e-9:
         base_sim.step_to(t)
-        dahs_sim.step_to(t)
+        meta_sim.step_to(t)
         baseline_snaps.append(base_sim.get_visual_snapshot())
-        dahs_snaps.append(dahs_sim.get_visual_snapshot())
+        meta_snaps.append(meta_sim.get_visual_snapshot())
+        if priority_sim:
+            priority_sim.step_to(t)
+            priority_snaps.append(priority_sim.get_visual_snapshot())
         t += SNAP_INTERVAL
 
-    # Ensure final snapshot
     if abs(t - SNAP_INTERVAL - SIM_DURATION) > 0.5:
-        base_sim.step_to(SIM_DURATION)
-        dahs_sim.step_to(SIM_DURATION)
+        base_sim.step_to(SIM_DURATION); meta_sim.step_to(SIM_DURATION)
         baseline_snaps.append(base_sim.get_visual_snapshot())
-        dahs_snaps.append(dahs_sim.get_visual_snapshot())
+        meta_snaps.append(meta_sim.get_visual_snapshot())
+        if priority_sim:
+            priority_sim.step_to(SIM_DURATION)
+            priority_snaps.append(priority_sim.get_visual_snapshot())
 
-    # Evaluation log
-    eval_log: List[Dict] = []
-    switching_summary: Dict[str, Any] = {}
+    # Pick the better learned arm as the headline "DAHS" (lower final tardiness).
+    meta_tard = float(meta_snaps[-1]["metrics"].get("totalTardiness", float("inf")))
+    if priority_sim:
+        prio_tard = float(priority_snaps[-1]["metrics"].get("totalTardiness", float("inf")))
+        if prio_tard <= meta_tard:
+            dahs_snaps = priority_snaps
+            dahs_arm_label = "DAHS-Priority (GBR ranker)"
+        else:
+            dahs_snaps = meta_snaps
+            dahs_arm_label = "DAHS Meta-selector (15-min switching)"
+    else:
+        dahs_snaps = meta_snaps
+        dahs_arm_label = "DAHS Meta-selector (15-min switching)"
 
-    if dahs_selector is not None:
-        eval_log = dahs_selector._eval_log
-        switching_summary = dahs_selector.get_summary()
+    # Evaluation log — always from meta-selector so the switching timeline renders.
+    eval_log = meta_selector._eval_log
+    switching_summary = meta_selector.get_summary()
+    switching_summary["dahsArmUsed"] = dahs_arm_label
 
     # Preset metadata
     preset_meta: Dict[str, Any] = {}
-    if preset_name:
-        try:
-            from src.presets import get_preset as _gp
-            _p = _gp(preset_name)
-            preset_meta = {
-                "presetName": _p.name,
-                "presetFavoredHeuristic": _p.favored_heuristic,
-                "presetWhyItFavors": _p.why_it_favors,
-            }
-        except Exception:
-            pass
+    if preset_name and preset is not None:
+        preset_meta = {
+            "presetName": preset.name,
+            "presetFavoredHeuristic": preset.favored_heuristic,
+            "presetWhyItFavors": preset.why_it_favors,
+            "presetBaselineLabel": _HEURISTIC_DISPLAY.get(
+                preset.favored_heuristic, preset.favored_heuristic
+            ),
+        }
 
     return {
         "baseline":         baseline_snaps,
@@ -716,6 +788,10 @@ async def simulate_ws(ws: WebSocket) -> None:
 # Serve the built React frontend (website/dist) — must be LAST
 # ---------------------------------------------------------------------------
 _DIST = Path(__file__).parent / "website" / "dist"
+
+_PLOTS = Path(__file__).parent / "results" / "plots"
+if _PLOTS.exists():
+    app.mount("/plots", StaticFiles(directory=str(_PLOTS)), name="plots")
 
 if _DIST.exists():
     app.mount("/assets", StaticFiles(directory=str(_DIST / "assets")), name="assets")

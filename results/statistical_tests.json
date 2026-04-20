@@ -1,0 +1,254 @@
+{
+  "friedman": {
+    "statistic": 191.9806,
+    "p_value": 3.417771800951614e-35,
+    "significant": true,
+    "metric": "total_tardiness"
+  },
+  "wilcoxon": [
+    {
+      "baseline": "atc",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 3.012,
+      "ci_95_lo": 10850.94,
+      "ci_95_hi": 14679.85
+    },
+    {
+      "baseline": "critical_ratio",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 14.2915,
+      "ci_95_lo": 29681.13,
+      "ci_95_hi": 31549.92
+    },
+    {
+      "baseline": "dahs_hybrid_rf",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 4.7634,
+      "ci_95_lo": 12450.76,
+      "ci_95_hi": 14893.49
+    },
+    {
+      "baseline": "dahs_hybrid_xgb",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 5.2739,
+      "ci_95_lo": 12756.99,
+      "ci_95_hi": 15094.24
+    },
+    {
+      "baseline": "dahs_oracle",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 5.5123,
+      "ci_95_lo": 12985.44,
+      "ci_95_hi": 15230.75
+    },
+    {
+      "baseline": "dahs_rf",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 5.6251,
+      "ci_95_lo": 21076.23,
+      "ci_95_hi": 24570.99
+    },
+    {
+      "baseline": "dahs_xgb",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 8.8466,
+      "ci_95_lo": 23884.29,
+      "ci_95_hi": 26322.69
+    },
+    {
+      "baseline": "fifo",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 12.2634,
+      "ci_95_lo": 26551.09,
+      "ci_95_hi": 28556.75
+    },
+    {
+      "baseline": "priority_edd",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 5.0633,
+      "ci_95_lo": 17240.03,
+      "ci_95_hi": 20467.49
+    },
+    {
+      "baseline": "slack",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 9.3626,
+      "ci_95_lo": 28736.36,
+      "ci_95_hi": 31527.5
+    },
+    {
+      "baseline": "wspt",
+      "dahs": "hybrid_priority",
+      "statistic": 210.0,
+      "p_value": 9.5367431640625e-07,
+      "significant_holm": true,
+      "cohens_d": 3.135,
+      "ci_95_lo": 9786.91,
+      "ci_95_hi": 12880.16
+    }
+  ],
+  "summary": [
+    {
+      "method": "atc",
+      "n": 20,
+      "makespan_mean": 598.86,
+      "makespan_std": 0.94,
+      "tardiness_mean": 15047.7,
+      "tardiness_std": 3986.63,
+      "sla_mean": 0.2605,
+      "cycle_mean": 89.77,
+      "throughput_mean": 52.28
+    },
+    {
+      "method": "critical_ratio",
+      "n": 20,
+      "makespan_mean": 598.86,
+      "makespan_std": 1.37,
+      "tardiness_mean": 32961.41,
+      "tardiness_std": 1626.61,
+      "sla_mean": 0.4962,
+      "cycle_mean": 144.92,
+      "throughput_mean": 46.94
+    },
+    {
+      "method": "dahs_hybrid_rf",
+      "n": 20,
+      "makespan_mean": 599.32,
+      "makespan_std": 0.52,
+      "tardiness_mean": 15979.96,
+      "tardiness_std": 2513.22,
+      "sla_mean": 0.3299,
+      "cycle_mean": 94.63,
+      "throughput_mean": 50.67
+    },
+    {
+      "method": "dahs_hybrid_xgb",
+      "n": 20,
+      "makespan_mean": 599.29,
+      "makespan_std": 0.45,
+      "tardiness_mean": 16193.28,
+      "tardiness_std": 2340.34,
+      "sla_mean": 0.3461,
+      "cycle_mean": 95.77,
+      "throughput_mean": 50.75
+    },
+    {
+      "method": "dahs_oracle",
+      "n": 20,
+      "makespan_mean": 599.55,
+      "makespan_std": 0.41,
+      "tardiness_mean": 16393.8,
+      "tardiness_std": 2417.94,
+      "sla_mean": 0.3481,
+      "cycle_mean": 96.91,
+      "throughput_mean": 50.24
+    },
+    {
+      "method": "dahs_rf",
+      "n": 20,
+      "makespan_mean": 599.31,
+      "makespan_std": 0.54,
+      "tardiness_mean": 25160.7,
+      "tardiness_std": 4161.03,
+      "sla_mean": 0.4234,
+      "cycle_mean": 127.02,
+      "throughput_mean": 50.5
+    },
+    {
+      "method": "dahs_xgb",
+      "n": 20,
+      "makespan_mean": 599.51,
+      "makespan_std": 0.43,
+      "tardiness_mean": 27405.44,
+      "tardiness_std": 2613.15,
+      "sla_mean": 0.4496,
+      "cycle_mean": 134.45,
+      "throughput_mean": 49.41
+    },
+    {
+      "method": "fifo",
+      "n": 20,
+      "makespan_mean": 599.17,
+      "makespan_std": 0.83,
+      "tardiness_mean": 29865.96,
+      "tardiness_std": 1713.1,
+      "sla_mean": 0.4506,
+      "cycle_mean": 148.73,
+      "throughput_mean": 46.13
+    },
+    {
+      "method": "hybrid_priority",
+      "n": 20,
+      "makespan_mean": 599.39,
+      "makespan_std": 0.49,
+      "tardiness_mean": 2285.74,
+      "tardiness_std": 1187.57,
+      "sla_mean": 0.0541,
+      "cycle_mean": 64.82,
+      "throughput_mean": 50.63
+    },
+    {
+      "method": "priority_edd",
+      "n": 20,
+      "makespan_mean": 598.92,
+      "makespan_std": 0.95,
+      "tardiness_mean": 21144.87,
+      "tardiness_std": 3659.4,
+      "sla_mean": 0.3024,
+      "cycle_mean": 99.55,
+      "throughput_mean": 50.42
+    },
+    {
+      "method": "slack",
+      "n": 20,
+      "makespan_mean": 598.95,
+      "makespan_std": 1.14,
+      "tardiness_mean": 32466.64,
+      "tardiness_std": 2392.46,
+      "sla_mean": 0.4807,
+      "cycle_mean": 144.12,
+      "throughput_mean": 45.92
+    },
+    {
+      "method": "wspt",
+      "n": 20,
+      "makespan_mean": 599.23,
+      "makespan_std": 0.63,
+      "tardiness_mean": 13575.6,
+      "tardiness_std": 3943.61,
+      "sla_mean": 0.1655,
+      "cycle_mean": 65.79,
+      "throughput_mean": 52.95
+    }
+  ]
+}

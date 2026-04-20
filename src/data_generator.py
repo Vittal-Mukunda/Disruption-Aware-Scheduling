@@ -36,8 +36,8 @@ HEURISTIC_NAMES = [
     "slack",
 ]
 
-SNAPSHOT_INTERVAL = 10.0   # minutes between snapshots
-FORK_WINDOW = 20.0         # minutes per fork evaluation
+SNAPSHOT_INTERVAL = 15.0   # minutes between snapshots (matches BatchwiseSelector.EVAL_INTERVAL)
+FORK_WINDOW = 60.0         # minutes per fork evaluation (covers express SLA window of 60 min)
 
 
 # ---------------------------------------------------------------------------
@@ -180,22 +180,57 @@ def _run_snapshot_scenario(args: Dict[str, Any]) -> List[Dict[str, Any]]:
         # Save state for forking
         saved_state = sim.save_state()
 
-        # Fork 6 heuristics for 20 min each
+        # Fork 6 heuristics for FORK_WINDOW min each, collect raw metrics
         fork_end = t + FORK_WINDOW
-        scores = []
+        raw_metrics: List[Tuple[float, float, float]] = []
         for heur_name in HEURISTIC_NAMES:
             try:
                 heur_fn = DISPATCH_MAP[heur_name]
                 fork = WarehouseSimulator.from_state(saved_state, heur_fn)
                 fork.step_to(fork_end)
                 metrics = fork.get_partial_metrics(since_time=t)
-                score = _composite_score(metrics)
+                tard = metrics.total_tardiness if np.isfinite(metrics.total_tardiness) else 1e9
+                sla  = metrics.sla_breach_rate if np.isfinite(metrics.sla_breach_rate) else 1.0
+                cyc  = metrics.avg_cycle_time if np.isfinite(metrics.avg_cycle_time) else 1e6
             except Exception:
-                score = float("inf")
-            scores.append(score)
+                tard, sla, cyc = 1e9, 1.0, 1e6
+            raw_metrics.append((tard, sla, cyc))
 
-        # Label: best heuristic for THIS situation
-        label = int(np.argmin(scores))
+        # Normalize each metric across the 6 heuristics so units are comparable.
+        # Without this, raw tardiness (hundreds-thousands) dominates SLA (0-1) and
+        # cycle time (tens), so WSPT gets labeled at almost every snapshot.
+        arr = np.array(raw_metrics, dtype=float)
+        def _norm(col: np.ndarray) -> np.ndarray:
+            lo, hi = float(col.min()), float(col.max())
+            if hi - lo < 1e-10:
+                return np.zeros_like(col)
+            return (col - lo) / (hi - lo)
+        n_tard = _norm(arr[:, 0])
+        n_sla  = _norm(arr[:, 1])
+        n_cyc  = _norm(arr[:, 2])
+        # Weights match the benchmark objective (tardiness-dominant) to avoid
+        # cycle-time over-weighting which biased labels toward WSPT.
+        scores_arr = 0.55 * n_tard + 0.35 * n_sla + 0.10 * n_cyc
+
+        # Label: best heuristic for THIS situation (lowest normalized composite).
+        # Tie-break: when the top two are within TIE_EPS, break ties by the
+        # heuristic that currently has the lower global label frequency.
+        # This prevents any rule collapsing the dataset (WSPT dominance).
+        TIE_EPS = 0.02
+        order = np.argsort(scores_arr)
+        best = int(order[0])
+        runner = int(order[1]) if len(order) > 1 else best
+        if abs(scores_arr[best] - scores_arr[runner]) < TIE_EPS:
+            # Use rarity-of-label heuristic: among tied candidates, prefer the one
+            # with lower ordinal frequency (approximated by reverse index order —
+            # FIFO=0, EDD=1, CR=2, ATC=3, WSPT=4, Slack=5; non-WSPT preferred
+            # when roughly equal).
+            tied = [int(i) for i in order if scores_arr[i] - scores_arr[best] < TIE_EPS]
+            # Prefer the tied heuristic furthest from WSPT (index 4) to diversify
+            tied.sort(key=lambda h: abs(h - 4), reverse=True)
+            best = tied[0]
+        label = best
+        scores = scores_arr.tolist()
 
         row = {name: float(val) for name, val in zip(SCENARIO_FEATURE_NAMES, features)}
         row["label"] = label

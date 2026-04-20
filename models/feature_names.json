@@ -130,5 +130,65 @@
     "description": "[NOVEL] Fraction of waiting jobs with Critical Ratio < 1",
     "category": "disruption",
     "index": 21
+  },
+  {
+    "name": "pct_type_A",
+    "description": "[NOVEL] Fraction of waiting jobs of type A (standard)",
+    "category": "system",
+    "index": 22
+  },
+  {
+    "name": "pct_type_B",
+    "description": "[NOVEL] Fraction of waiting jobs of type B (picking-intensive)",
+    "category": "system",
+    "index": 23
+  },
+  {
+    "name": "pct_type_C",
+    "description": "[NOVEL] Fraction of waiting jobs of type C (value-add)",
+    "category": "system",
+    "index": 24
+  },
+  {
+    "name": "pct_type_D",
+    "description": "[NOVEL] Fraction of waiting jobs of type D (complex/bulk)",
+    "category": "system",
+    "index": 25
+  },
+  {
+    "name": "pct_type_E",
+    "description": "[NOVEL] Fraction of waiting jobs of type E (express)",
+    "category": "system",
+    "index": 26
+  },
+  {
+    "name": "count_type_A",
+    "description": "[NOVEL] Absolute count of waiting type-A jobs",
+    "category": "system",
+    "index": 27
+  },
+  {
+    "name": "count_type_B",
+    "description": "[NOVEL] Absolute count of waiting type-B jobs",
+    "category": "system",
+    "index": 28
+  },
+  {
+    "name": "count_type_C",
+    "description": "[NOVEL] Absolute count of waiting type-C jobs",
+    "category": "system",
+    "index": 29
+  },
+  {
+    "name": "count_type_D",
+    "description": "[NOVEL] Absolute count of waiting type-D jobs",
+    "category": "system",
+    "index": 30
+  },
+  {
+    "name": "count_type_E",
+    "description": "[NOVEL] Absolute count of waiting type-E jobs",
+    "category": "system",
+    "index": 31
   }
 ]
