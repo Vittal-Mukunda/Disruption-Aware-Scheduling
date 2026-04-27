@@ -37,12 +37,16 @@ NEW: Re-evaluate every 15 minutes OR on disruption events (breakdown, batch arri
 - Level 2: Feature attribution bar chart (which of 22 features drove the decision)
 - Level 3: Decision tree path, confidence probabilities for all 6 heuristics, what-if comparison
 
-### 5. Educational Frontend (5 pages)
-- Overview: teaches what JSSP is, why adaptive scheduling matters
-- Algorithms: each of 6 heuristics explained with animation, formula, when-it-works/fails
-- Simulation: main interactive demo with side-by-side comparison + real-time explainability
-- Results: pre-computed statistical evaluation dashboard
-- Architecture: system diagram, data flow, technology stack
+### 5. Educational Frontend (3 pages)
+- Landing: headline result, calibrated metrics fetched from `/api/results`, calls to action
+- Methodology: pipeline steps, design decisions, comparison with DAHS_1, statistical protocol
+- Simulation: interactive demo with side-by-side baseline vs DAHS, real-time explainability log
+
+(Earlier drafts described a 5-page site with separate Overview, Results, and
+Architecture pages; those were merged into Landing + Methodology + Simulation
+to avoid duplication. The Results page content is now served as JSON via
+`GET /api/results` once `scripts/run_pipeline.py` has populated
+`results/benchmark_summary.json` and `results/statistical_tests.json`.)
 
 ---
 

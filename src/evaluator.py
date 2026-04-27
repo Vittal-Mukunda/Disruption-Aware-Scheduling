@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -332,44 +333,190 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
 # Statistical analysis
 # ---------------------------------------------------------------------------
 
+# Direction of preference per metric. "lower" means smaller value is better
+# (e.g. tardiness, SLA breach, cycle time); "higher" means larger is better
+# (throughput, utilization). Used to set the alternative for the one-sided
+# Wilcoxon and to sign Cohen's d so a positive value always means "DAHS wins."
+METRIC_DIRECTIONS: Dict[str, str] = {
+    "total_tardiness":      "lower",
+    "sla_breach_rate":      "lower",
+    "avg_cycle_time":       "lower",
+    "makespan":             "lower",
+    "throughput":           "higher",
+    "zone_utilization_avg": "higher",
+}
+
+
+def _wilcoxon_for_metric(
+    pivot: pd.DataFrame,
+    available_methods: List[str],
+    dahs_col: str,
+    metric: str,
+    direction: str,
+) -> List[Dict[str, Any]]:
+    """One-sided Wilcoxon DAHS-vs-baseline for a single metric.
+
+    Lower-is-better metrics test H1: baseline > DAHS, so a small p-value means
+    DAHS is significantly *lower* (better). Higher-is-better metrics test
+    H1: DAHS > baseline. `diff` is always (better-side - worse-side) so the
+    resulting Cohen's d is positive when DAHS wins, negative when it loses.
+    Holm-Bonferroni is applied within each metric family by the caller.
+    """
+    rows: List[Dict[str, Any]] = []
+    if dahs_col not in pivot.columns:
+        return rows
+    dahs_vals = pivot[dahs_col].values
+    for method in available_methods:
+        if method == dahs_col:
+            continue
+        try:
+            base_vals = pivot[method].values
+            if direction == "lower":
+                stat, p = stats.wilcoxon(base_vals, dahs_vals, alternative="greater")
+                diff = base_vals - dahs_vals
+            else:
+                stat, p = stats.wilcoxon(dahs_vals, base_vals, alternative="greater")
+                diff = dahs_vals - base_vals
+            d = float(np.mean(diff) / (np.std(diff) + 1e-10))
+            boot_means = [
+                np.mean(np.random.choice(diff, size=len(diff), replace=True))
+                for _ in range(5000)
+            ]
+            ci_lo, ci_hi = np.percentile(boot_means, [2.5, 97.5])
+            rows.append({
+                "metric": metric,
+                "direction": direction,
+                "baseline": method,
+                "dahs": dahs_col,
+                "statistic": round(float(stat), 4),
+                "p_value": float(p),
+                "significant_holm": False,
+                "cohens_d": round(d, 4),
+                "ci_95_lo": round(float(ci_lo), 4),
+                "ci_95_hi": round(float(ci_hi), 4),
+            })
+        except Exception as exc:
+            logger.warning("Wilcoxon failed for %s on %s: %s", method, metric, exc)
+    if rows:
+        ps = [r["p_value"] for r in rows]
+        n = len(ps)
+        order = np.argsort(ps)
+        for rank, idx in enumerate(order):
+            rows[idx]["significant_holm"] = ps[idx] < (0.05 / (n - rank))
+    return rows
+
+
+def _nemenyi_critical_difference(k: int, n: int, alpha: float = 0.05) -> float:
+    """Nemenyi critical-difference for k methods over n datasets at alpha=0.05.
+
+    CD = q_alpha * sqrt(k*(k+1) / (6*n)) per Demsar (2006), JMLR 7:1-30.
+    """
+    Q_05 = {
+        2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850, 7: 2.949,
+        8: 3.031, 9: 3.102, 10: 3.164,
+    }
+    q = Q_05.get(k, Q_05[10] + 0.05 * (k - 10))
+    return float(q * math.sqrt(k * (k + 1) / (6.0 * n)))
+
+
+def _nemenyi_pairwise(pivot: pd.DataFrame, available_methods: List[str]) -> Dict[str, Any]:
+    """Nemenyi pairwise comparisons + critical difference for the primary metric."""
+    if len(available_methods) < 3 or pivot.shape[0] < 2:
+        return {"available": False, "reason": "need >=3 methods and >=2 seeds"}
+
+    ranks = pivot[available_methods].rank(axis=1, method="average")
+    mean_ranks = ranks.mean(axis=0).to_dict()
+    n_seeds = ranks.shape[0]
+    k = len(available_methods)
+    cd = _nemenyi_critical_difference(k, n_seeds)
+
+    matrix: List[Dict[str, Any]] = []
+    for i, mi in enumerate(available_methods):
+        for j, mj in enumerate(available_methods):
+            if j <= i:
+                continue
+            diff = abs(mean_ranks[mi] - mean_ranks[mj])
+            matrix.append({
+                "method_a": mi,
+                "method_b": mj,
+                "rank_a": round(float(mean_ranks[mi]), 4),
+                "rank_b": round(float(mean_ranks[mj]), 4),
+                "rank_diff": round(float(diff), 4),
+                "significant": bool(diff > cd),
+            })
+    return {
+        "available": True,
+        "alpha": 0.05,
+        "k": k,
+        "n_seeds": n_seeds,
+        "critical_difference": round(cd, 4),
+        "mean_ranks": {m: round(float(r), 4) for m, r in mean_ranks.items()},
+        "pairwise": matrix,
+    }
+
+
+def _plot_critical_difference_diagram(nemenyi: Dict[str, Any]) -> None:
+    """Render a Demsar-style critical-difference diagram at results/plots/cd_diagram.png."""
+    if not nemenyi.get("available"):
+        return
+    mean_ranks: Dict[str, float] = nemenyi["mean_ranks"]
+    cd: float = nemenyi["critical_difference"]
+    methods = sorted(mean_ranks.keys(), key=lambda m: mean_ranks[m])
+    ranks = [mean_ranks[m] for m in methods]
+    k = len(methods)
+
+    PLOTS_DIR.mkdir(parents=True, exist_ok=True)
+    fig, ax = _dark_fig(figsize=(12, 4 + 0.3 * k))
+    rank_min = min(ranks) - 0.5
+    rank_max = max(ranks) + 0.5
+    ax.set_xlim(rank_min, rank_max)
+    ax.set_ylim(0, k + 1)
+    ax.invert_xaxis()
+    ax.get_yaxis().set_visible(False)
+    for side in ("left", "right", "top"):
+        ax.spines[side].set_visible(False)
+
+    for i, m in enumerate(methods):
+        y = k - i
+        x = mean_ranks[m]
+        ax.plot([rank_min, x], [y, y], color="#445", linewidth=0.75)
+        ax.plot([x], [y], "o", color=COLORS[i % len(COLORS)], markersize=8)
+        ax.text(rank_min - 0.05 * (rank_max - rank_min), y,
+                f"{m}  (rank {x:.2f})",
+                ha="right", va="center", color=TEXT_COL, fontsize=10)
+
+    cd_y = 0.5
+    ax.plot([min(ranks), min(ranks) + cd], [cd_y, cd_y], color="#e57373", linewidth=2.5)
+    ax.text(min(ranks) + cd / 2, cd_y - 0.25,
+            f"CD = {cd:.3f} (Nemenyi, α=0.05)",
+            ha="center", va="top", color="#e57373", fontsize=10)
+
+    ax.set_xlabel("Mean rank (lower = better)")
+    ax.set_title("Critical-Difference Diagram — total_tardiness", color=TEXT_COL, fontsize=13)
+    plt.tight_layout()
+    plt.savefig(PLOTS_DIR / "cd_diagram.png", dpi=150, facecolor=DARK_BG)
+    plt.close()
+
+
 def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
-    """Run Friedman, Wilcoxon, Cohen's d, Bootstrap CI on benchmark results.
+    """Run Friedman, Nemenyi post-hoc, direction-aware Wilcoxon, Cohen's d.
 
-    Statistical methodology follows:
-      - Friedman test: Demsar (2006), JMLR 7:1-30. Non-parametric test for
-        k >= 3 related samples. Preferred over ANOVA when normality cannot
-        be assumed across 300 seeds.
-      - Nemenyi post-hoc: Nemenyi (1963). Distribution-free pairwise
-        comparisons after a significant Friedman result.
-      - Wilcoxon signed-rank: Wilcoxon (1945), Biometrics Bulletin 1(6):80-83.
-        Pairwise test of DAHS superiority over each baseline.
-      - Holm-Bonferroni correction: Holm (1979), Scand. J. Statistics 6(2):65-70.
-        Controls family-wise error rate across multiple comparisons.
-      - Cohen's d: Cohen (1988), Statistical Power Analysis, 2nd ed.
-        Effect size: d>0.2 small, d>0.5 medium, d>0.8 large.
-      - Bootstrap 95% CI: 5,000 resamples of the performance difference
-        distribution (Efron & Tibshirani, 1993).
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        Output of run_benchmark().
-
-    Returns
-    -------
-    dict with keys: friedman, wilcoxon, effect_sizes, bootstrap_ci
+    See Demsar (2006) JMLR 7:1-30 for the full protocol. The Wilcoxon test is
+    direction-aware: for lower-is-better metrics the alternative is
+    H1: baseline > DAHS; for higher-is-better metrics it is H1: DAHS > baseline.
+    Cohen's d is signed so positive d always means DAHS wins.
+    Holm-Bonferroni controls FWER within each metric family.
     """
     methods = sorted(df["method"].unique())
 
-    metric = "total_tardiness"
-    pivot = df.pivot_table(index="seed", columns="method", values=metric)
+    primary_metric = "total_tardiness"
+    pivot = df.pivot_table(index="seed", columns="method", values=primary_metric)
     pivot.dropna(inplace=True)
 
     available_methods = [m for m in methods if m in pivot.columns]
 
-    results: Dict[str, Any] = {}
+    results: Dict[str, Any] = {"primary_metric": primary_metric}
 
-    # Friedman test
     try:
         data_arrays = [pivot[m].values for m in available_methods]
         stat, p = stats.friedmanchisquare(*data_arrays)
@@ -377,16 +524,24 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
             "statistic": round(float(stat), 4),
             "p_value": float(p),
             "significant": bool(p < 0.05),
-            "metric": metric,
+            "metric": primary_metric,
         }
         logger.info("Friedman test: chi2=%.4f, p=%.6f", stat, p)
     except Exception as e:
         results["friedman"] = {"error": str(e)}
 
-    # Wilcoxon signed-rank tests (DAHS vs each baseline).
-    # hybrid_priority (per-job priority GBR scorer) is the empirical winner
-    # and is the primary DAHS contribution; the fork-oracle/ML-selector
-    # variants are kept as ablations.
+    try:
+        nemenyi = _nemenyi_pairwise(pivot, available_methods)
+        results["nemenyi"] = nemenyi
+        if nemenyi.get("available"):
+            _plot_critical_difference_diagram(nemenyi)
+            logger.info("Nemenyi: CD=%.4f over k=%d methods, n=%d seeds",
+                        nemenyi["critical_difference"], nemenyi["k"], nemenyi["n_seeds"])
+    except Exception as e:
+        results["nemenyi"] = {"error": str(e)}
+
+    # Pick the headline DAHS column. hybrid_priority (per-job GBR) is the
+    # empirical winner in DAHS_2.1; ML-only/oracle variants are ablations.
     _priority = [
         "hybrid_priority",
         "dahs_hybrid_xgb", "dahs_hybrid_rf",
@@ -394,50 +549,27 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
         "dahs_xgb", "dahs_rf",
     ]
     dahs_col = next((c for c in _priority if c in available_methods), None)
-    wilcoxon_results = []
-    if dahs_col in pivot.columns:
-        dahs_vals = pivot[dahs_col].values
-        for method in available_methods:
-            if method == dahs_col:
+    if dahs_col is None:
+        results["wilcoxon"] = []
+        results["wilcoxon_secondary"] = {}
+    else:
+        results["wilcoxon"] = _wilcoxon_for_metric(
+            pivot, available_methods, dahs_col,
+            primary_metric, METRIC_DIRECTIONS[primary_metric],
+        )
+        secondary: Dict[str, List[Dict[str, Any]]] = {}
+        for metric, direction in METRIC_DIRECTIONS.items():
+            if metric == primary_metric:
                 continue
-            try:
-                baseline_vals = pivot[method].values
-                # Alternative="greater" tests baseline > hybrid (bug fix from DAHS_1)
-                stat, p = stats.wilcoxon(baseline_vals, dahs_vals, alternative="greater")
-                # Cohen's d
-                diff = baseline_vals - dahs_vals
-                d = float(np.mean(diff) / (np.std(diff) + 1e-10))
-                # Bootstrap CI
-                boot_means = [
-                    np.mean(np.random.choice(diff, size=len(diff), replace=True))
-                    for _ in range(5000)
-                ]
-                ci_lo, ci_hi = np.percentile(boot_means, [2.5, 97.5])
-                wilcoxon_results.append({
-                    "baseline": method,
-                    "dahs": dahs_col,
-                    "statistic": round(float(stat), 4),
-                    "p_value": float(p),
-                    "significant_holm": False,  # corrected below
-                    "cohens_d": round(d, 4),
-                    "ci_95_lo": round(float(ci_lo), 2),
-                    "ci_95_hi": round(float(ci_hi), 2),
-                })
-            except Exception as e:
-                logger.warning("Wilcoxon failed for %s: %s", method, e)
+            piv_m = df.pivot_table(index="seed", columns="method", values=metric).dropna()
+            avail_m = [m for m in methods if m in piv_m.columns]
+            if dahs_col not in avail_m:
+                continue
+            secondary[metric] = _wilcoxon_for_metric(
+                piv_m, avail_m, dahs_col, metric, direction
+            )
+        results["wilcoxon_secondary"] = secondary
 
-        # Holm-Bonferroni correction
-        if wilcoxon_results:
-            p_values = [r["p_value"] for r in wilcoxon_results]
-            n = len(p_values)
-            sorted_idx = np.argsort(p_values)
-            for rank, idx in enumerate(sorted_idx):
-                threshold = 0.05 / (n - rank)
-                wilcoxon_results[idx]["significant_holm"] = p_values[idx] < threshold
-
-    results["wilcoxon"] = wilcoxon_results
-
-    # Summary statistics per method
     summary = []
     for method in available_methods:
         method_df = df[df["method"] == method]
@@ -454,7 +586,6 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
         })
     results["summary"] = summary
 
-    # Save JSON
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(RESULTS_DIR / "statistical_tests.json", "w") as f:
         json.dump(results, f, indent=2)

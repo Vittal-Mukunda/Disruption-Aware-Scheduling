@@ -792,29 +792,61 @@ def load_batchwise_selector(
         raise FileNotFoundError(f"Model not found: {path}")
     model = joblib.load(path)
 
+    model_hash = getattr(model, "_dahs_run_hash", None)
+
     # Load feature importances if available
     feature_importances = None
     feature_names = None
+    names_meta: Dict[str, Any] = {}
 
     try:
         feature_names_path = MODELS_DIR / "feature_names.json"
         if feature_names_path.exists():
             with open(feature_names_path) as f:
                 names_data = json.load(f)
-            feature_names = [d["name"] for d in names_data]
+            if isinstance(names_data, dict) and "features" in names_data:
+                names_meta = names_data.get("_meta", {})
+                feature_names = [d["name"] for d in names_data["features"]]
+            else:
+                feature_names = [d["name"] for d in names_data]
 
         if hasattr(model, "feature_importances_"):
             feature_importances = model.feature_importances_
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning("Failed to load feature_names.json: %s", exc)
 
     # Load feature ranges for OOD detection
+    ranges_meta: Dict[str, Any] = {}
     try:
         ranges_path = MODELS_DIR / "feature_ranges.json"
         if ranges_path.exists():
             feature_extractor.load_feature_ranges(ranges_path)
-    except Exception:
-        pass
+            ranges_meta = getattr(feature_extractor, "_feature_ranges_meta", {}) or {}
+    except Exception as exc:
+        logger.warning("Failed to load feature_ranges.json: %s", exc)
+
+    # Validate that all artifacts came from the same training run. Legacy
+    # artifacts (model_hash is None) are tolerated for backwards compatibility,
+    # but any present-and-disagreeing hashes raise loudly — a mismatch means
+    # someone retrained without regenerating sidecars and the OOD guardrail
+    # would otherwise apply stale ranges.
+    artifact_hashes = {
+        "model": model_hash,
+        "feature_ranges": ranges_meta.get("run_hash"),
+        "feature_names": names_meta.get("run_hash"),
+    }
+    present = {k: v for k, v in artifact_hashes.items() if v is not None}
+    if len(set(present.values())) > 1:
+        raise RuntimeError(
+            "DAHS model/artifact hash mismatch — re-run scripts/run_pipeline.py "
+            f"to regenerate them in lockstep. Hashes: {artifact_hashes}"
+        )
+    if feature_names is not None and hasattr(model, "n_features_in_"):
+        if model.n_features_in_ != len(feature_names):
+            raise RuntimeError(
+                f"Model expects {model.n_features_in_} features but "
+                f"feature_names.json has {len(feature_names)}. Retrain."
+            )
 
     return BatchwiseSelector(
         model=model,

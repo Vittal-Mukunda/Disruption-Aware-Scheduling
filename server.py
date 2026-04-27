@@ -105,7 +105,11 @@ def get_feature_names() -> List[Dict[str, Any]]:
     json_path = MODELS_DIR / "feature_names.json"
     if json_path.exists():
         with open(json_path) as f:
-            return json.load(f)
+            data = json.load(f)
+        # Tolerate both wrapped ({"_meta", "features": [...]}) and flat formats.
+        if isinstance(data, dict) and "features" in data:
+            return data["features"]
+        return data
 
     # Fallback: generate from source
     return [

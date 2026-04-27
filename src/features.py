@@ -139,6 +139,9 @@ class FeatureExtractor:
         self.batch_pending: bool = False
         # Stored feature ranges for OOD detection (set after training)
         self._feature_ranges: Optional[Dict[str, Tuple[float, float]]] = None
+        # Metadata loaded alongside the ranges (run hash etc.) — used by the
+        # selector loader to detect stale artifacts.
+        self._feature_ranges_meta: Dict[str, Any] = {}
 
     # ------------------------------------------------------------------
     # Event update
@@ -454,11 +457,22 @@ class FeatureExtractor:
         self._feature_ranges = ranges
 
     def load_feature_ranges(self, json_path: "Union[Path, str]") -> Dict[str, Tuple[float, float]]:
-        """Load feature ranges from a JSON file saved by train_selector.py."""
+        """Load feature ranges from a JSON file saved by train_selector.py.
+
+        Accepts both the legacy flat format ({feature_name: [min, max]}) and
+        the wrapped format ({"_meta": {...}, "ranges": {feature_name: [...]}}).
+        Stores any meta payload on `self._feature_ranges_meta` so callers can
+        verify the artifact was produced in the same training run as the model.
+        """
         with open(json_path, "r") as f:
             data = json.load(f)
-        # JSON format: {feature_name: [min, max]}
-        ranges = {k: (v[0], v[1]) for k, v in data.items()}
+        if isinstance(data, dict) and "ranges" in data:
+            self._feature_ranges_meta = data.get("_meta", {})
+            raw = data["ranges"]
+        else:
+            self._feature_ranges_meta = {}
+            raw = data
+        ranges = {k: (v[0], v[1]) for k, v in raw.items()}
         self._feature_ranges = ranges
         return ranges
 

