@@ -160,9 +160,33 @@ def run_benchmark(
     return df
 
 
+def _row(seed: int, method: str, m: Any, elapsed: float) -> Dict[str, Any]:
+    """Build one benchmark row from a SimulationMetrics + wall-clock seconds.
+
+    Wall-clock matters for paper review: a method that wins on tardiness but
+    is 50× slower than ATC isn't deployable. We capture it on every row so
+    "DAHS adds X ms per dispatch" claims are backed by data, not asserted.
+    """
+    util_vals = list(m.zone_utilization.values())
+    return {
+        "seed": seed,
+        "method": method,
+        "makespan": m.makespan,
+        "total_tardiness": m.total_tardiness,
+        "sla_breach_rate": m.sla_breach_rate,
+        "avg_cycle_time": m.avg_cycle_time,
+        "zone_utilization_avg": float(np.mean(util_vals)) if util_vals else 0.0,
+        "throughput": m.throughput,
+        "queue_max": m.queue_max,
+        "completed_jobs": m.completed_jobs,
+        "elapsed_seconds": round(float(elapsed), 4),
+    }
+
+
 def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
-    """Worker: run all 9 methods on one seed."""
+    """Worker: run all methods on one seed and return their metric rows."""
     (seed,) = args
+    import time as _time
     from src.heuristics import (
         fifo_dispatch, priority_edd_dispatch, critical_ratio_dispatch,
         atc_dispatch, wspt_dispatch, slack_dispatch,
@@ -170,7 +194,7 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
     from src.simulator import WarehouseSimulator
     from src.features import FeatureExtractor
 
-    rows = []
+    rows: List[Dict[str, Any]] = []
     methods = [
         ("fifo",           fifo_dispatch),
         ("priority_edd",   priority_edd_dispatch),
@@ -180,26 +204,37 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
         ("slack",          slack_dispatch),
     ]
 
+    # Capture per-baseline tardiness/SLA/cycle/throughput on this seed so we
+    # can synthesise a "best fixed heuristic in hindsight" row at the end.
+    # An operator picking the post-hoc best fixed rule is the natural lower
+    # bound any learned scheduler must beat.
+    baseline_metrics: Dict[str, Any] = {}
+
     for method_name, heur_fn in methods:
         try:
             fe = FeatureExtractor()
             sim = WarehouseSimulator(seed=seed, heuristic_fn=heur_fn, feature_extractor=fe)
+            t0 = _time.perf_counter()
             m = sim.run(duration=600.0)
-            util_vals = list(m.zone_utilization.values())
-            rows.append({
-                "seed": seed,
-                "method": method_name,
-                "makespan": m.makespan,
-                "total_tardiness": m.total_tardiness,
-                "sla_breach_rate": m.sla_breach_rate,
-                "avg_cycle_time": m.avg_cycle_time,
-                "zone_utilization_avg": float(np.mean(util_vals)) if util_vals else 0.0,
-                "throughput": m.throughput,
-                "queue_max": m.queue_max,
-                "completed_jobs": m.completed_jobs,
-            })
+            elapsed = _time.perf_counter() - t0
+            rows.append(_row(seed, method_name, m, elapsed))
+            baseline_metrics[method_name] = m
         except Exception as e:
             logger.warning("[%s] %s failed: %s", seed, method_name, e)
+
+    # Best-fixed-in-hindsight oracle: minimum tardiness across the six fixed
+    # rules. For non-tardiness metrics we copy the corresponding metric from
+    # the same winning method so SLA/cycle/throughput stay self-consistent.
+    if baseline_metrics:
+        winner_name = min(
+            baseline_metrics,
+            key=lambda k: baseline_metrics[k].total_tardiness,
+        )
+        wm = baseline_metrics[winner_name]
+        rows.append({
+            **_row(seed, "best_fixed_oracle", wm, 0.0),
+            "best_fixed_winner": winner_name,
+        })
 
     # Try hybrid methods if models exist.
     # For each trained model we run TWO variants:
@@ -227,20 +262,9 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
                 return _dispatch
 
             sim.heuristic_fn = make_dispatch(selector, sim)
+            t0 = _time.perf_counter()
             m = sim.run(duration=600.0)
-            util_vals = list(m.zone_utilization.values())
-            rows.append({
-                "seed": seed,
-                "method": f"dahs_{model_name}",
-                "makespan": m.makespan,
-                "total_tardiness": m.total_tardiness,
-                "sla_breach_rate": m.sla_breach_rate,
-                "avg_cycle_time": m.avg_cycle_time,
-                "zone_utilization_avg": float(np.mean(util_vals)) if util_vals else 0.0,
-                "throughput": m.throughput,
-                "queue_max": m.queue_max,
-                "completed_jobs": m.completed_jobs,
-            })
+            rows.append(_row(seed, f"dahs_{model_name}", m, _time.perf_counter() - t0))
 
             # ── (b) Hybrid = ML prior + fork oracle (the guarantee) ────────
             fe2 = FeatureExtractor()
@@ -248,20 +272,9 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
             sim2 = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=fe2)
             oracle.attach_simulator(sim2)
             sim2.heuristic_fn = lambda jobs, t, z: oracle.dispatch(jobs, t, z)
+            t0 = _time.perf_counter()
             m2 = sim2.run(duration=600.0)
-            util_vals2 = list(m2.zone_utilization.values())
-            rows.append({
-                "seed": seed,
-                "method": f"dahs_hybrid_{model_name}",
-                "makespan": m2.makespan,
-                "total_tardiness": m2.total_tardiness,
-                "sla_breach_rate": m2.sla_breach_rate,
-                "avg_cycle_time": m2.avg_cycle_time,
-                "zone_utilization_avg": float(np.mean(util_vals2)) if util_vals2 else 0.0,
-                "throughput": m2.throughput,
-                "queue_max": m2.queue_max,
-                "completed_jobs": m2.completed_jobs,
-            })
+            rows.append(_row(seed, f"dahs_hybrid_{model_name}", m2, _time.perf_counter() - t0))
         except Exception as e:
             logger.warning("[%s] dahs_%s failed: %s", seed, model_name, e)
 
@@ -274,34 +287,23 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
         simo = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=feo)
         oracle.attach_simulator(simo)
         simo.heuristic_fn = lambda jobs, t, z: oracle.dispatch(jobs, t, z)
+        t0 = _time.perf_counter()
         mo = simo.run(duration=600.0)
-        util_valso = list(mo.zone_utilization.values())
-        rows.append({
-            "seed": seed,
-            "method": "dahs_oracle",
-            "makespan": mo.makespan,
-            "total_tardiness": mo.total_tardiness,
-            "sla_breach_rate": mo.sla_breach_rate,
-            "avg_cycle_time": mo.avg_cycle_time,
-            "zone_utilization_avg": float(np.mean(util_valso)) if util_valso else 0.0,
-            "throughput": mo.throughput,
-            "queue_max": mo.queue_max,
-            "completed_jobs": mo.completed_jobs,
-        })
+        rows.append(_row(seed, "dahs_oracle", mo, _time.perf_counter() - t0))
     except Exception as e:
         logger.warning("[%s] dahs_oracle failed: %s", seed, e)
 
-    # Priority hybrid
+    # Priority hybrid (per-job GBR scorer). NOTE: held last in the headline
+    # priority list because its training CV R² was 0.022 ± 0.717 — keep it
+    # in the benchmark for completeness/ablation but do not let it lead.
     priority_path = MODELS_DIR / "priority_gbr.joblib"
     if priority_path.exists():
         try:
             import joblib
             from src.hybrid_scheduler import HybridPriority
 
-            model = joblib.load(priority_path)
             fe = FeatureExtractor()
             priority = HybridPriority(model_path=priority_path, feature_extractor=fe)
-
             sim = WarehouseSimulator(seed=seed, heuristic_fn=fifo_dispatch, feature_extractor=fe)
 
             def _priority_dispatch(jobs, t, zone_id):
@@ -309,20 +311,9 @@ def _benchmark_single_seed(args: Tuple) -> List[Dict[str, Any]]:
                 return priority(jobs, t, zone_id)
 
             sim.heuristic_fn = _priority_dispatch
+            t0 = _time.perf_counter()
             m = sim.run(duration=600.0)
-            util_vals = list(m.zone_utilization.values())
-            rows.append({
-                "seed": seed,
-                "method": "hybrid_priority",
-                "makespan": m.makespan,
-                "total_tardiness": m.total_tardiness,
-                "sla_breach_rate": m.sla_breach_rate,
-                "avg_cycle_time": m.avg_cycle_time,
-                "zone_utilization_avg": float(np.mean(util_vals)) if util_vals else 0.0,
-                "throughput": m.throughput,
-                "queue_max": m.queue_max,
-                "completed_jobs": m.completed_jobs,
-            })
+            rows.append(_row(seed, "hybrid_priority", m, _time.perf_counter() - t0))
         except Exception as e:
             logger.warning("[%s] hybrid_priority failed: %s", seed, e)
 
@@ -540,23 +531,69 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
     except Exception as e:
         results["nemenyi"] = {"error": str(e)}
 
-    # Pick the headline DAHS column. hybrid_priority (per-job GBR) is the
-    # empirical winner in DAHS_2.1; ML-only/oracle variants are ablations.
+    # Pick the headline DAHS column. Order = best evidence first:
+    #   1. dahs_hybrid_*  — ML prior + rolling-horizon fork oracle, the
+    #                       method we want the paper to highlight (guarantees
+    #                       at least best-fixed in expectation).
+    #   2. dahs_oracle    — pure fork oracle, the upper-bound ablation.
+    #   3. dahs_*         — greedy ML-only (BatchwiseSelector) ablation.
+    #   4. hybrid_priority — per-job GBR scorer; held LAST because its
+    #                        training CV R² was 0.022 ± 0.717. Keep it in
+    #                        the benchmark for completeness but do not let
+    #                        it lead headline numbers until regularised.
     _priority = [
-        "hybrid_priority",
         "dahs_hybrid_xgb", "dahs_hybrid_rf",
         "dahs_oracle",
         "dahs_xgb", "dahs_rf",
+        "hybrid_priority",
     ]
     dahs_col = next((c for c in _priority if c in available_methods), None)
+    results["headline_method"] = dahs_col
     if dahs_col is None:
         results["wilcoxon"] = []
         results["wilcoxon_secondary"] = {}
+        results["per_seed_dominance"] = {}
     else:
         results["wilcoxon"] = _wilcoxon_for_metric(
             pivot, available_methods, dahs_col,
             primary_metric, METRIC_DIRECTIONS[primary_metric],
         )
+
+        # Per-seed dominance: on what fraction of seeds does the headline
+        # DAHS method beat each baseline on tardiness? This is the honest
+        # answer to the "does it win on every seed" question.
+        dominance: Dict[str, Any] = {"n_seeds": int(pivot.shape[0])}
+        per_baseline: Dict[str, Dict[str, Any]] = {}
+        beats_strongest_seeds = 0
+        # Identify "best baseline per seed" so we can compute win-rate vs
+        # the per-seed best fixed rule (the hardest comparison).
+        baseline_only = [m for m in available_methods
+                         if m not in (
+                             "dahs_xgb", "dahs_rf",
+                             "dahs_hybrid_xgb", "dahs_hybrid_rf",
+                             "dahs_oracle", "hybrid_priority",
+                             "best_fixed_oracle",
+                         )]
+        for method in available_methods:
+            if method == dahs_col:
+                continue
+            wins = int((pivot[dahs_col] < pivot[method]).sum())
+            ties = int((pivot[dahs_col] == pivot[method]).sum())
+            per_baseline[method] = {
+                "wins": wins,
+                "ties": ties,
+                "losses": int(pivot.shape[0] - wins - ties),
+                "win_rate": round(wins / max(pivot.shape[0], 1), 4),
+            }
+        if baseline_only:
+            best_per_seed = pivot[baseline_only].min(axis=1)
+            beats_strongest_seeds = int((pivot[dahs_col] < best_per_seed).sum())
+            dominance["wins_vs_best_fixed_per_seed"] = beats_strongest_seeds
+            dominance["win_rate_vs_best_fixed_per_seed"] = round(
+                beats_strongest_seeds / max(pivot.shape[0], 1), 4
+            )
+        dominance["per_baseline"] = per_baseline
+        results["per_seed_dominance"] = dominance
         secondary: Dict[str, List[Dict[str, Any]]] = {}
         for metric, direction in METRIC_DIRECTIONS.items():
             if metric == primary_metric:

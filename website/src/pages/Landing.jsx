@@ -4,35 +4,44 @@ import { Link } from 'react-router-dom';
 import useReveal from '../hooks/useReveal';
 import MetaSelectorAnimation from '../components/MetaSelectorAnimation.jsx';
 
-// Fallback figures shown until a real benchmark JSON exists. The pipeline
+// Placeholder figures shown until a real benchmark JSON exists. The pipeline
 // writes results/benchmark_summary.json + statistical_tests.json which are
-// served by the FastAPI /api/results endpoint; once those files are present
-// the Landing page replaces these placeholders with derived numbers.
+// served by /api/results; once those files are present, deriveHeadline
+// replaces every field below with a value computed from the actual data.
+//
+// We deliberately avoid claiming pointwise dominance here — the placeholder
+// shows representative example figures, and the real headline can only
+// claim what the data supports (win rate on held-out seeds, mean
+// improvement, Cohen's d). Drop hero copy if your data is weaker.
 const FALLBACK_HEADLINE = {
-  tardinessReductionPct: 83,
-  perSeedDominance: 20,
-  perSeedDominanceTotal: 20,
-  cohensDLabel: '> 3',
+  tardinessReductionPct: 0,
+  perSeedDominance: 0,
+  perSeedDominanceTotal: 300,
+  winRatePct: 0,
+  cohensDLabel: '—',
   friedmanLine:
-    'Friedman χ² = 191.98, p = 3.4e-35 across 12 methods × 20 seeds. All comparisons survive Holm-Bonferroni correction. Bootstrap 95% CI strictly above zero for every contrast.',
-  strongestBaselineLabel: 'WSPT (strongest classical baseline)',
+    'Run scripts/run_pipeline.py to populate Friedman / Nemenyi / Wilcoxon results.',
+  strongestBaselineLabel: 'strongest classical baseline',
 };
 
 function deriveHeadline(apiResults) {
   if (!apiResults || !apiResults.summary || !apiResults.stats) return null;
+  const stats = apiResults.stats;
   const summary = apiResults.summary;
-  const dahsRow =
-    summary.find((s) => s.method === 'hybrid_priority') ||
-    summary.find((s) => s.method === 'dahs_hybrid_xgb') ||
-    summary.find((s) => s.method === 'dahs_hybrid_rf') ||
-    summary.find((s) => s.method === 'dahs_xgb') ||
-    summary.find((s) => s.method === 'dahs_rf');
+
+  // The evaluator picks the headline DAHS method (best evidence first):
+  // dahs_hybrid_*, dahs_oracle, dahs_*, hybrid_priority. We trust its choice.
+  const headlineMethod = stats.headline_method;
+  const dahsRow = headlineMethod
+    ? summary.find((s) => s.method === headlineMethod)
+    : null;
   if (!dahsRow) return null;
 
   const baselineMethods = ['fifo', 'priority_edd', 'critical_ratio', 'atc', 'wspt', 'slack'];
   const baselineRows = summary.filter((s) => baselineMethods.includes(s.method));
   if (!baselineRows.length) return null;
 
+  // Strongest baseline = lowest mean tardiness across the six fixed rules.
   const strongest = baselineRows.reduce((best, row) =>
     row.tardiness_mean < best.tardiness_mean ? row : best
   );
@@ -40,18 +49,26 @@ function deriveHeadline(apiResults) {
   const baseTard = strongest.tardiness_mean || 1;
   const reductionPct = Math.max(0, Math.round(((baseTard - dahsTard) / baseTard) * 100));
 
-  const wilcoxon = apiResults.stats.wilcoxon || [];
+  const wilcoxon = stats.wilcoxon || [];
   const dCohens = wilcoxon.map((r) => r.cohens_d).filter((d) => typeof d === 'number');
   const minD = dCohens.length ? Math.min(...dCohens) : null;
 
-  const friedman = apiResults.stats.friedman || {};
-  const k = (apiResults.summary || []).length;
-  const nSeeds = dahsRow.n;
+  // Per-seed dominance vs the per-seed best fixed rule (the hardest test).
+  const dom = stats.per_seed_dominance || {};
+  const nSeeds = dom.n_seeds || dahsRow.n;
+  const winsBest = (typeof dom.wins_vs_best_fixed_per_seed === 'number')
+    ? dom.wins_vs_best_fixed_per_seed
+    : 0;
+  const winRatePct = Math.round(((dom.win_rate_vs_best_fixed_per_seed ?? 0)) * 100);
+
+  const friedman = stats.friedman || {};
+  const k = summary.length;
 
   return {
     tardinessReductionPct: reductionPct,
-    perSeedDominance: nSeeds,
+    perSeedDominance: winsBest,
     perSeedDominanceTotal: nSeeds,
+    winRatePct,
     cohensDLabel: minD !== null ? `≥ ${minD.toFixed(1)}` : '—',
     friedmanLine:
       friedman.statistic !== undefined
@@ -136,13 +153,13 @@ export default function Landing() {
             Disruption-Aware Hybrid Scheduler
           </div>
           <h1 className="font-heading text-5xl md:text-6xl font-bold leading-tight text-foreground mb-5 text-balance">
-            A learned scheduler that <span className="italic text-primary">beats every classical
-            dispatch rule</span> on every random seed.
+            A learned scheduler that <span className="italic text-primary">outperforms every
+            classical dispatch rule</span> on average — with statistical significance.
           </h1>
           <p className="font-body text-lg md:text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed mb-8">
             DAHS combines per-job ML priority scoring with a meta-heuristic selector,
             calibrated to real Olist e-commerce data.
-            {' '}{headline.tardinessReductionPct}% lower tardiness than the strongest baseline. p &lt; 1e-6.
+            {' '}{headline.tardinessReductionPct}% mean tardiness reduction vs the strongest baseline (Wilcoxon, Holm-corrected, Cohen&apos;s d {headline.cohensDLabel}).
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-2">
             <Link
@@ -208,8 +225,8 @@ export default function Landing() {
             <StatCard
               value={headline.perSeedDominance}
               suffix={`/${headline.perSeedDominanceTotal}`}
-              label="Per-seed dominance"
-              sublabel="DAHS wins on every random seed"
+              label="Seeds DAHS wins"
+              sublabel={`Wins on ${headline.winRatePct}% of held-out seeds`}
               color="text-primary"
             />
             <StatCard
