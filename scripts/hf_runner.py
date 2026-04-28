@@ -68,6 +68,16 @@ def main():
     print(f"Uploading models and results to {REPO_ID}...")
     
     try:
+        # Upload data directory (raw datasets)
+        if os.path.exists("data"):
+            api.upload_folder(
+                folder_path="data",
+                repo_id=REPO_ID,
+                repo_type="model",
+                path_in_repo="data"
+            )
+            print("✅ Successfully uploaded data/")
+
         # Upload models directory
         if os.path.exists("models"):
             api.upload_folder(
@@ -88,7 +98,7 @@ def main():
             )
             print("✅ Successfully uploaded results/")
             
-        print("\n🎉 ALL DONE! Your models are safely stored on Hugging Face.")
+        print("\n🎉 ALL DONE! Your data, models, and results are safely stored on Hugging Face.")
     except Exception as e:
         print(f"\n❌ FATAL ERROR DURING UPLOAD: {e}")
         print("The training succeeded, but uploading to Hugging Face failed.")
