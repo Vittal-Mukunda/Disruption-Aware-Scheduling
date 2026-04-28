@@ -16,7 +16,7 @@ def main():
     print("--- DAHS HF RUNNER STARTING ---")
     
     if not HF_TOKEN or not REPO_ID:
-        print("❌ FATAL ERROR: HF_TOKEN and REPO_ID environment variables are missing!")
+        print("[FATAL ERROR] HF_TOKEN and REPO_ID environment variables are missing!")
         print("Please go to Space Settings -> Variables and secrets, and add:")
         print("1. HF_TOKEN (Must be a Fine-grained token with 'Write' access to models)")
         print("2. REPO_ID (The exact name of the dataset/model repo, e.g., Vittal-M/DAHS-Models)")
@@ -29,9 +29,9 @@ def main():
     # 🚨 CRITICAL FIX: Fail FAST if the repo can't be created or accessed
     try:
         api.create_repo(repo_id=REPO_ID, repo_type="model", exist_ok=True)
-        print(f"✅ Repository {REPO_ID} is accessible and ready.")
+        print(f"[SUCCESS] Repository {REPO_ID} is accessible and ready.")
     except Exception as e:
-        print(f"❌ FATAL ERROR: Failed to create or access the repository {REPO_ID}.")
+        print(f"[FATAL ERROR] Failed to create or access the repository {REPO_ID}.")
         print(f"Reason: {e}")
         print("ABORTING: We will not start the training to prevent wasting your time/credits.")
         sys.exit(1)
@@ -59,7 +59,7 @@ def main():
     ])
     
     if result.returncode != 0:
-        print("\n❌ Pipeline failed! Aborting upload.")
+        print("\n[FATAL ERROR] Pipeline failed! Aborting upload.")
         sys.exit(1)
         
     print("--- PIPELINE FINISHED SUCCESSFULY ---\n")
@@ -76,7 +76,7 @@ def main():
                 repo_type="model",
                 path_in_repo="data"
             )
-            print("✅ Successfully uploaded data/")
+            print("[SUCCESS] Successfully uploaded data/")
 
         # Upload models directory
         if os.path.exists("models"):
@@ -86,7 +86,7 @@ def main():
                 repo_type="model",
                 path_in_repo="models"
             )
-            print("✅ Successfully uploaded models/")
+            print("[SUCCESS] Successfully uploaded models/")
 
         # Upload results directory
         if os.path.exists("results"):
@@ -96,11 +96,11 @@ def main():
                 repo_type="model",
                 path_in_repo="results"
             )
-            print("✅ Successfully uploaded results/")
+            print("[SUCCESS] Successfully uploaded results/")
             
-        print("\n🎉 ALL DONE! Your data, models, and results are safely stored on Hugging Face.")
+        print("\n[SUCCESS] ALL DONE! Your data, models, and results are safely stored on Hugging Face.")
     except Exception as e:
-        print(f"\n❌ FATAL ERROR DURING UPLOAD: {e}")
+        print(f"\n[FATAL ERROR] DURING UPLOAD: {e}")
         print("The training succeeded, but uploading to Hugging Face failed.")
         sys.exit(1)
 
