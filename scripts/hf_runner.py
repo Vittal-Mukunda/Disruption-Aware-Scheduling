@@ -5,12 +5,34 @@ import multiprocessing
 import threading
 import http.server
 import socketserver
+from datetime import datetime
+from pathlib import Path
 from huggingface_hub import HfApi, login
 
 # 1. Configuration
 # You must set these in Hugging Face Space Settings -> Variables and secrets
 HF_TOKEN = os.environ.get("HF_TOKEN")
 REPO_ID = os.environ.get("REPO_ID") # e.g., "Vittal-M/DAHS-Models"
+
+def upload_artifacts(api: HfApi) -> None:
+    """Upload data/, models/, results/ to REPO_ID. Best-effort — never raises."""
+    print(f"Uploading artifacts to {REPO_ID}...")
+    for folder in ("data", "models", "results"):
+        if not os.path.exists(folder):
+            print(f"[SKIP] {folder}/ does not exist")
+            continue
+        try:
+            api.upload_folder(
+                folder_path=folder,
+                repo_id=REPO_ID,
+                repo_type="model",
+                path_in_repo=folder,
+            )
+            print(f"[SUCCESS] Uploaded {folder}/")
+        except Exception as e:
+            print(f"[ERROR] Failed to upload {folder}/: {e}")
+    print("\n[DONE] Upload pass complete.")
+
 
 def main():
     print("--- DAHS HF RUNNER STARTING ---")
@@ -45,63 +67,34 @@ def main():
     print("Started dummy web server on port 7860 to bypass health check timeouts.")
 
     # 2. Run the heavy pipeline
-    # I have added --no-eval here to skip the 14-hour benchmark. 
-    # This will train the 6000-scenario models in ~1 hour and upload them safely.
-    # If you *want* the 16 hour benchmark, simply remove the "--no-eval" argument below.
-    cores = "8" 
-    print(f"\n--- STARTING DAHS PIPELINE (6000 Scenarios on {cores} Workers) ---")
-    
+    # Sized for Q1 results within ~12h compute budget on HF:
+    #   2000 scenarios -> ~120k selector training rows
+    #   500 eval seeds -> 4500 sims, plenty for Friedman/Nemenyi/Wilcoxon
+    cores = "8"
+    print(f"\n--- STARTING DAHS PIPELINE (2000 Scenarios, 500 Eval Seeds, {cores} Workers) ---")
+
     result = subprocess.run([
-        "python", "scripts/run_pipeline.py", 
-        "--scenarios", "6000", 
-        "--workers", cores,
-        "--no-eval"   # <-- REMOVE THIS if you want the full 14-hour 1000-seed eval to run again
+        "python", "scripts/run_pipeline.py",
+        "--scenarios",  "2000",
+        "--eval-seeds", "500",
+        "--workers",    cores,
     ])
-    
+
+    status = "SUCCESS" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
+    Path("results").mkdir(exist_ok=True)
+    (Path("results") / "run_status.txt").write_text(
+        f"{status}\n{datetime.utcnow().isoformat()}Z\n"
+    )
+
+    if result.returncode == 0:
+        print("--- PIPELINE FINISHED SUCCESSFULLY ---\n")
+    else:
+        print(f"\n[ERROR] Pipeline exited with code {result.returncode}. Uploading partial artifacts anyway.\n")
+
+    # 3. Upload trained artifacts (always — even on partial failure)
+    upload_artifacts(api)
+
     if result.returncode != 0:
-        print("\n[FATAL ERROR] Pipeline failed! Aborting upload.")
-        sys.exit(1)
-        
-    print("--- PIPELINE FINISHED SUCCESSFULY ---\n")
-
-    # 3. Upload the trained models and results back to Hugging Face
-    print(f"Uploading models and results to {REPO_ID}...")
-    
-    try:
-        # Upload data directory (raw datasets)
-        if os.path.exists("data"):
-            api.upload_folder(
-                folder_path="data",
-                repo_id=REPO_ID,
-                repo_type="model",
-                path_in_repo="data"
-            )
-            print("[SUCCESS] Successfully uploaded data/")
-
-        # Upload models directory
-        if os.path.exists("models"):
-            api.upload_folder(
-                folder_path="models",
-                repo_id=REPO_ID,
-                repo_type="model",
-                path_in_repo="models"
-            )
-            print("[SUCCESS] Successfully uploaded models/")
-
-        # Upload results directory
-        if os.path.exists("results"):
-            api.upload_folder(
-                folder_path="results",
-                repo_id=REPO_ID,
-                repo_type="model",
-                path_in_repo="results"
-            )
-            print("[SUCCESS] Successfully uploaded results/")
-            
-        print("\n[SUCCESS] ALL DONE! Your data, models, and results are safely stored on Hugging Face.")
-    except Exception as e:
-        print(f"\n[FATAL ERROR] DURING UPLOAD: {e}")
-        print("The training succeeded, but uploading to Hugging Face failed.")
         sys.exit(1)
 
     # 4. PAUSE THE SPACE TO SAVE CREDITS

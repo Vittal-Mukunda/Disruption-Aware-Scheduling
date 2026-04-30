@@ -62,10 +62,11 @@ def main() -> None:
     parser.add_argument("--no-eval", action="store_true", help="Skip benchmark evaluation")
     parser.add_argument("--workers", type=int, default=4, help="Number of parallel workers")
     parser.add_argument("--scenarios", type=int, default=None, help="Override number of scenarios")
+    parser.add_argument("--eval-seeds", type=int, default=None, help="Override number of evaluation seeds")
     args = parser.parse_args()
 
     n_scenarios = args.scenarios or (50 if args.quick else 1000)
-    n_eval_seeds = 20 if args.quick else 300
+    n_eval_seeds = args.eval_seeds or (20 if args.quick else 1000)
     n_workers = args.workers
 
     t_start = time.time()

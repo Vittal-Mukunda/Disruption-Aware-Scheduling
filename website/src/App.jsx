@@ -13,22 +13,40 @@ function ScrollToTop() {
   return null;
 }
 
-export default function App() {
+function AppShell() {
+  const { pathname } = useLocation();
+  const isSim = pathname === '/simulation';
+
   return (
-    <BrowserRouter>
+    <>
       <div className="texture-paper" />
       <ScrollToTop />
       <Navbar />
-      <main className="relative z-10 pt-32 pb-24 text-foreground">
+      {isSim ? (
         <Routes>
-          <Route path="/"            element={<Landing />} />
-          <Route path="/methodology" element={<Methodology />} />
-          <Route path="/simulation"  element={<Simulation />} />
-          <Route path="*"            element={<Navigate to="/" replace />} />
+          <Route path="/simulation" element={<Simulation />} />
         </Routes>
-      </main>
-      <Footer />
-      <BackToTop />
+      ) : (
+        <>
+          <main className="relative z-10 pt-32 pb-24 text-foreground">
+            <Routes>
+              <Route path="/"            element={<Landing />} />
+              <Route path="/methodology" element={<Methodology />} />
+              <Route path="*"            element={<Navigate to="/" replace />} />
+            </Routes>
+          </main>
+          <Footer />
+          <BackToTop />
+        </>
+      )}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppShell />
     </BrowserRouter>
   );
 }

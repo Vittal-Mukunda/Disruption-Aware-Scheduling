@@ -2,31 +2,29 @@
   "description": "DAHS_2 batch-wise switching analysis (15-min intervals)",
   "dahs_rf": {
     "sample_seeds": 10,
-    "avg_evaluations_per_run": 120.7,
-    "avg_switches_per_run": 4.2,
-    "avg_hysteresis_blocked_per_run": 30.9,
+    "avg_evaluations_per_run": 118.4,
+    "avg_switches_per_run": 2.6,
+    "avg_hysteresis_blocked_per_run": 12.0,
     "avg_guardrail_activations_per_run": 1.1,
-    "switching_rate_per_interval": 0.0351,
+    "switching_rate_per_interval": 0.0221,
     "heuristic_selection_distribution": {
-      "atc": 0.0771,
-      "fifo": 0.4424,
-      "priority_edd": 0.0249,
-      "wspt": 0.4557
+      "fifo": 0.0718,
+      "priority_edd": 0.0726,
+      "wspt": 0.8556
     }
   },
   "dahs_xgb": {
     "sample_seeds": 10,
-    "avg_evaluations_per_run": 122.8,
-    "avg_switches_per_run": 5.8,
-    "avg_hysteresis_blocked_per_run": 30.7,
+    "avg_evaluations_per_run": 119.9,
+    "avg_switches_per_run": 6.4,
+    "avg_hysteresis_blocked_per_run": 29.8,
     "avg_guardrail_activations_per_run": 1.1,
-    "switching_rate_per_interval": 0.0476,
+    "switching_rate_per_interval": 0.0538,
     "heuristic_selection_distribution": {
-      "atc": 0.0741,
-      "fifo": 0.377,
-      "priority_edd": 0.0586,
-      "slack": 0.0896,
-      "wspt": 0.4007
+      "atc": 0.0342,
+      "fifo": 0.1343,
+      "priority_edd": 0.3011,
+      "wspt": 0.5304
     }
   }
 }

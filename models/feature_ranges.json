@@ -1,130 +1,137 @@
 {
-  "n_orders_in_system": [
-    5.0,
-    3412.0
-  ],
-  "n_express_orders_pct": [
-    0.0,
-    0.6805111765861511
-  ],
-  "avg_due_date_tightness": [
-    -186.05799865722656,
-    999.0
-  ],
-  "fraction_already_late": [
-    0.0,
-    0.9132024049758911
-  ],
-  "zone_utilization_avg": [
-    0.09435492008924484,
-    0.73884516954422
-  ],
-  "zone_utilization_std": [
-    0.14720289409160614,
-    0.4444999098777771
-  ],
-  "bottleneck_zone": [
-    0.5174983739852905,
-    1.0
-  ],
-  "avg_remaining_proc_time": [
-    0.0,
-    54.410072326660156
-  ],
-  "std_remaining_proc_time": [
-    0.0,
-    16.104129791259766
-  ],
-  "throughput_last_30min": [
-    0.0,
-    0.0
-  ],
-  "breakdown_flag": [
-    0.0,
-    1.0
-  ],
-  "n_broken_stations": [
-    0.0,
-    15.0
-  ],
-  "lunch_break_flag": [
-    0.0,
-    1.0
-  ],
-  "surge_multiplier": [
-    0.6000000238418579,
-    1.649999976158142
-  ],
-  "batch_pending_flag": [
-    0.0,
-    0.0
-  ],
-  "avg_priority_weight": [
-    0.8666666746139526,
-    3.0
-  ],
-  "max_tardiness_so_far": [
-    0.0,
-    490.2060241699219
-  ],
-  "sla_breach_rate_current": [
-    0.0,
-    1.0
-  ],
-  "disruption_intensity": [
-    0.0,
-    0.800000011920929
-  ],
-  "queue_imbalance": [
-    0.0,
-    2.6457512378692627
-  ],
-  "job_mix_entropy": [
-    0.0,
-    2.3008182048797607
-  ],
-  "time_pressure_ratio": [
-    0.0,
-    1.0
-  ],
-  "pct_type_A": [
-    0.0,
-    1.0
-  ],
-  "pct_type_B": [
-    0.0,
-    1.0
-  ],
-  "pct_type_C": [
-    0.0,
-    1.0
-  ],
-  "pct_type_D": [
-    0.0,
-    0.8571428656578064
-  ],
-  "pct_type_E": [
-    0.0,
-    1.0
-  ],
-  "count_type_A": [
-    0.0,
-    1288.0
-  ],
-  "count_type_B": [
-    0.0,
-    2014.0
-  ],
-  "count_type_C": [
-    0.0,
-    1144.0
-  ],
-  "count_type_D": [
-    0.0,
-    1368.0
-  ],
-  "count_type_E": [
-    0.0,
-    1088.0
-  ]
+  "_meta": {
+    "run_hash": "0b10e09da63dcfd4",
+    "n_train": 1560,
+    "feature_count": 32
+  },
+  "ranges": {
+    "n_orders_in_system": [
+      7.0,
+      3287.0
+    ],
+    "n_express_orders_pct": [
+      0.0,
+      0.6418439745903015
+    ],
+    "avg_due_date_tightness": [
+      -174.99110412597656,
+      999.0
+    ],
+    "fraction_already_late": [
+      0.0,
+      0.8945818543434143
+    ],
+    "zone_utilization_avg": [
+      0.1860264390707016,
+      0.699737548828125
+    ],
+    "zone_utilization_std": [
+      0.1579049974679947,
+      0.4224904775619507
+    ],
+    "bottleneck_zone": [
+      0.7218681573867798,
+      1.0
+    ],
+    "avg_remaining_proc_time": [
+      0.0,
+      50.198524475097656
+    ],
+    "std_remaining_proc_time": [
+      0.0,
+      17.054054260253906
+    ],
+    "throughput_last_30min": [
+      0.0,
+      0.0
+    ],
+    "breakdown_flag": [
+      0.0,
+      1.0
+    ],
+    "n_broken_stations": [
+      0.0,
+      17.0
+    ],
+    "lunch_break_flag": [
+      0.0,
+      1.0
+    ],
+    "surge_multiplier": [
+      0.6000000238418579,
+      1.649999976158142
+    ],
+    "batch_pending_flag": [
+      0.0,
+      0.0
+    ],
+    "avg_priority_weight": [
+      0.800000011920929,
+      2.75
+    ],
+    "max_tardiness_so_far": [
+      0.0,
+      486.6158447265625
+    ],
+    "sla_breach_rate_current": [
+      0.0,
+      0.9520202279090881
+    ],
+    "disruption_intensity": [
+      0.0,
+      0.800000011920929
+    ],
+    "queue_imbalance": [
+      0.0,
+      2.6457512378692627
+    ],
+    "job_mix_entropy": [
+      0.0,
+      2.299386739730835
+    ],
+    "time_pressure_ratio": [
+      0.0,
+      0.9776207208633423
+    ],
+    "pct_type_A": [
+      0.0,
+      0.8571428656578064
+    ],
+    "pct_type_B": [
+      0.0,
+      0.5
+    ],
+    "pct_type_C": [
+      0.0,
+      1.0
+    ],
+    "pct_type_D": [
+      0.0,
+      1.0
+    ],
+    "pct_type_E": [
+      0.0,
+      0.75
+    ],
+    "count_type_A": [
+      0.0,
+      945.0
+    ],
+    "count_type_B": [
+      0.0,
+      959.0
+    ],
+    "count_type_C": [
+      0.0,
+      1099.0
+    ],
+    "count_type_D": [
+      0.0,
+      1416.0
+    ],
+    "count_type_E": [
+      0.0,
+      1245.0
+    ]
+  }
 }

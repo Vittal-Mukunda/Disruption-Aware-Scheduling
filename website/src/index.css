@@ -39,6 +39,11 @@
   100% { transform: translate(20px, -20px) scale(1.05) rotate(5deg); }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.5; transform: scale(0.85); }
+}
+
 /* Paper texture overlay */
 .texture-paper {
   position: fixed;
