@@ -2,29 +2,29 @@
   "description": "DAHS_2 batch-wise switching analysis (15-min intervals)",
   "dahs_rf": {
     "sample_seeds": 10,
-    "avg_evaluations_per_run": 118.4,
-    "avg_switches_per_run": 2.6,
-    "avg_hysteresis_blocked_per_run": 12.0,
+    "avg_evaluations_per_run": 116.0,
+    "avg_switches_per_run": 2.3,
+    "avg_hysteresis_blocked_per_run": 10.7,
     "avg_guardrail_activations_per_run": 1.1,
-    "switching_rate_per_interval": 0.0221,
+    "switching_rate_per_interval": 0.02,
     "heuristic_selection_distribution": {
-      "fifo": 0.0718,
-      "priority_edd": 0.0726,
-      "wspt": 0.8556
+      "fifo": 0.0422,
+      "priority_edd": 0.0526,
+      "wspt": 0.9052
     }
   },
   "dahs_xgb": {
     "sample_seeds": 10,
     "avg_evaluations_per_run": 119.9,
-    "avg_switches_per_run": 6.4,
-    "avg_hysteresis_blocked_per_run": 29.8,
+    "avg_switches_per_run": 6.5,
+    "avg_hysteresis_blocked_per_run": 27.4,
     "avg_guardrail_activations_per_run": 1.1,
-    "switching_rate_per_interval": 0.0538,
+    "switching_rate_per_interval": 0.0547,
     "heuristic_selection_distribution": {
-      "atc": 0.0342,
-      "fifo": 0.1343,
-      "priority_edd": 0.3011,
-      "wspt": 0.5304
+      "atc": 0.0642,
+      "fifo": 0.1776,
+      "priority_edd": 0.2435,
+      "wspt": 0.5146
     }
   }
 }

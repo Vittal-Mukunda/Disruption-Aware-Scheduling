@@ -102,6 +102,26 @@ def _dark_fig_multi(rows=1, cols=2, figsize=(16, 7)):
     return fig, axes
 
 
+def _cliffs_delta(a: np.ndarray, b: np.ndarray) -> float:
+    """Cliff's δ (non-parametric effect size, range [-1, 1]).
+
+    Magnitude thresholds (Romano et al., 2006): |δ|<0.147 negligible,
+    <0.33 small, <0.474 medium, else large. Preferred over Cohen's d
+    on skewed scheduling distributions where normality fails.
+    Computed exactly via O(n*m) pairwise comparison; n*m ≤ 1e6 here.
+    """
+    a = np.asarray(a)
+    b = np.asarray(b)
+    if len(a) == 0 or len(b) == 0:
+        return float("nan")
+    # Memory-friendly chunked comparison
+    gt = lt = 0
+    for ai in a:
+        gt += int(np.sum(ai > b))
+        lt += int(np.sum(ai < b))
+    return (gt - lt) / (len(a) * len(b))
+
+
 def _norm_min_max(arr: np.ndarray) -> np.ndarray:
     r = arr.max() - arr.min()
     if r < 1e-10:
@@ -374,6 +394,12 @@ def _wilcoxon_for_metric(
                 for _ in range(5000)
             ]
             ci_lo, ci_hi = np.percentile(boot_means, [2.5, 97.5])
+            # Cliff's δ — non-parametric effect size on the better-side vs
+            # worse-side raw values (signed so positive = DAHS wins).
+            if direction == "lower":
+                cliffs = _cliffs_delta(base_vals, dahs_vals)
+            else:
+                cliffs = _cliffs_delta(dahs_vals, base_vals)
             rows.append({
                 "metric": metric,
                 "direction": direction,
@@ -383,6 +409,7 @@ def _wilcoxon_for_metric(
                 "p_value": float(p),
                 "significant_holm": False,
                 "cohens_d": round(d, 4),
+                "cliffs_delta": round(float(cliffs), 4),
                 "ci_95_lo": round(float(ci_lo), 4),
                 "ci_95_hi": round(float(ci_hi), 4),
             })
@@ -610,18 +637,46 @@ def run_statistical_analysis(df: pd.DataFrame) -> Dict[str, Any]:
     summary = []
     for method in available_methods:
         method_df = df[df["method"] == method]
+        tard = method_df["total_tardiness"].values
+        # Bootstrap 95% CI on the mean tardiness — Efron & Tibshirani 1993.
+        if len(tard) >= 2:
+            boot = [np.mean(np.random.choice(tard, size=len(tard), replace=True))
+                    for _ in range(2000)]
+            tard_ci_lo, tard_ci_hi = float(np.percentile(boot, 2.5)), float(np.percentile(boot, 97.5))
+        else:
+            tard_ci_lo, tard_ci_hi = float("nan"), float("nan")
         summary.append({
             "method": method,
             "n": len(method_df),
             "makespan_mean": round(float(method_df["makespan"].mean()), 2),
-            "makespan_std": round(float(method_df["makespan"].std()), 2),
-            "tardiness_mean": round(float(method_df["total_tardiness"].mean()), 2),
-            "tardiness_std": round(float(method_df["total_tardiness"].std()), 2),
-            "sla_mean": round(float(method_df["sla_breach_rate"].mean()), 4),
-            "cycle_mean": round(float(method_df["avg_cycle_time"].mean()), 2),
+            "makespan_std":  round(float(method_df["makespan"].std()), 2),
+            "tardiness_mean":   round(float(np.mean(tard)), 2),
+            "tardiness_std":    round(float(np.std(tard)), 2),
+            "tardiness_median": round(float(np.median(tard)), 2),
+            "tardiness_p75":    round(float(np.percentile(tard, 75)), 2),
+            "tardiness_p95":    round(float(np.percentile(tard, 95)), 2),
+            "tardiness_p99":    round(float(np.percentile(tard, 99)), 2),
+            "tardiness_max":    round(float(np.max(tard)), 2),
+            "tardiness_iqr":    round(float(np.percentile(tard, 75) - np.percentile(tard, 25)), 2),
+            "tardiness_ci95_lo": round(tard_ci_lo, 2),
+            "tardiness_ci95_hi": round(tard_ci_hi, 2),
+            "sla_mean":      round(float(method_df["sla_breach_rate"].mean()), 4),
+            "sla_p95":       round(float(np.percentile(method_df["sla_breach_rate"].values, 95)), 4),
+            "cycle_mean":    round(float(method_df["avg_cycle_time"].mean()), 2),
+            "cycle_p95":     round(float(np.percentile(method_df["avg_cycle_time"].values, 95)), 2),
             "throughput_mean": round(float(method_df["throughput"].mean()), 2),
+            "elapsed_mean":  round(float(method_df["elapsed_seconds"].mean()), 4)
+                if "elapsed_seconds" in method_df else None,
         })
     results["summary"] = summary
+
+    # Paper-ready CSV: one row per method with the headline metrics.
+    try:
+        pd.DataFrame(summary).to_csv(
+            RESULTS_DIR / "paper_summary_table.csv", index=False,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("paper_summary_table.csv write failed: %s", e)
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     with open(RESULTS_DIR / "statistical_tests.json", "w") as f:

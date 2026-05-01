@@ -1,0 +1,31 @@
+{
+  "started_at": "2026-04-30T21:02:26.352582+00:00",
+  "git_sha": "fb77e99f10262644907f97d8792034a8723130b4",
+  "host": "Vittal",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "python": "3.12.7 (tags/v3.12.7:0b05ead, Oct  1 2024, 03:06:41) [MSC v.1941 64 bit (AMD64)]",
+  "cpu_count": 16,
+  "args": {
+    "quick": true,
+    "eval_only": false,
+    "no_eval": false,
+    "workers": 4,
+    "scenarios": null,
+    "eval_seeds": null,
+    "snapshot_every_step": true
+  },
+  "n_scenarios": 50,
+  "n_eval_seeds": 20,
+  "env": {
+    "REPO_ID": null,
+    "SPACE_ID": null,
+    "HF_TOKEN_set": false
+  },
+  "versions": {
+    "sklearn": "1.8.0",
+    "xgboost": "3.2.0",
+    "scipy": "1.17.1",
+    "numpy": "2.4.3",
+    "pandas": "2.2.3"
+  }
+}

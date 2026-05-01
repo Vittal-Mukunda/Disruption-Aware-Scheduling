@@ -38,8 +38,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    average_precision_score,
+    balanced_accuracy_score,
+    brier_score_loss,
+    classification_report,
+    cohen_kappa_score,
+    confusion_matrix,
+    f1_score,
+    log_loss,
+    matthews_corrcoef,
+    precision_recall_fscore_support,
+    roc_auc_score,
+)
 from sklearn.model_selection import StratifiedKFold, cross_val_score, train_test_split
+from sklearn.preprocessing import label_binarize
 from sklearn.tree import DecisionTreeClassifier, plot_tree
 from xgboost import XGBClassifier
 
@@ -47,9 +61,10 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 logger = logging.getLogger(__name__)
 
-DATA_PATH  = Path(__file__).parent.parent / "data" / "raw" / "selector_dataset.csv"
-MODELS_DIR = Path(__file__).parent.parent / "models"
-PLOTS_DIR  = Path(__file__).parent.parent / "results" / "plots"
+DATA_PATH    = Path(__file__).parent.parent / "data" / "raw" / "selector_dataset.csv"
+MODELS_DIR   = Path(__file__).parent.parent / "models"
+RESULTS_DIR  = Path(__file__).parent.parent / "results"
+PLOTS_DIR    = RESULTS_DIR / "plots"
 
 LABEL_NAMES = ["FIFO", "Priority-EDD", "Critical-Ratio", "ATC", "WSPT", "Slack"]
 
@@ -96,6 +111,177 @@ def _extract_dt_structure(dt: DecisionTreeClassifier, feature_names: List[str]) 
 
     _recurse(0)
     return {"nodes": nodes, "featureNames": feature_names, "classNames": LABEL_NAMES}
+
+
+def _compute_classification_metrics(
+    name: str,
+    model: Any,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    cv_scores: np.ndarray,
+    label_names: List[str],
+) -> Dict[str, Any]:
+    """Compute the full Q1 classification metric stack for one model.
+
+    Returned dict is JSON-safe; all entries are scalars or lists of scalars.
+    Decisions:
+      * ROC-AUC and PR-AUC: one-vs-rest, macro AND weighted (Demsar-style).
+      * Brier (multiclass): mean over classes of binary Brier on one-hot.
+      * MCC + Cohen's kappa: chance-corrected agreement (kappa is reported
+        because some scheduling reviewers prefer it over MCC).
+      * Per-class precision/recall/F1/support — ablation rows in the paper.
+      * Confusion matrix saved as PNG and as a list-of-lists in JSON.
+    """
+    n_classes = len(label_names)
+    y_pred = model.predict(X_test)
+
+    # predict_proba can be expensive on RF — compute once.
+    try:
+        y_proba = model.predict_proba(X_test)
+    except Exception:
+        y_proba = None
+
+    metrics: Dict[str, Any] = {
+        "model": name,
+        "n_train": int(X_train.shape[0]),
+        "n_test": int(X_test.shape[0]),
+        "n_features": int(X_train.shape[1]),
+        "n_classes": n_classes,
+        "accuracy": float(accuracy_score(y_test, y_pred)),
+        "balanced_accuracy": float(balanced_accuracy_score(y_test, y_pred)),
+        "mcc": float(matthews_corrcoef(y_test, y_pred)),
+        "cohens_kappa": float(cohen_kappa_score(y_test, y_pred)),
+        "f1_macro":    float(f1_score(y_test, y_pred, average="macro", zero_division=0)),
+        "f1_micro":    float(f1_score(y_test, y_pred, average="micro", zero_division=0)),
+        "f1_weighted": float(f1_score(y_test, y_pred, average="weighted", zero_division=0)),
+        "cv_accuracy_mean": float(cv_scores.mean()),
+        "cv_accuracy_std":  float(cv_scores.std()),
+        "cv_accuracy_folds": [float(s) for s in cv_scores],
+    }
+
+    # Per-class precision / recall / F1 / support
+    p, r, f1, support = precision_recall_fscore_support(
+        y_test, y_pred, labels=list(range(n_classes)), zero_division=0,
+    )
+    metrics["per_class"] = [
+        {
+            "class": label_names[i],
+            "class_idx": i,
+            "precision": float(p[i]),
+            "recall": float(r[i]),
+            "f1": float(f1[i]),
+            "support": int(support[i]),
+        }
+        for i in range(n_classes)
+    ]
+
+    # Confusion matrix (rows = true, cols = predicted)
+    cm = confusion_matrix(y_test, y_pred, labels=list(range(n_classes)))
+    metrics["confusion_matrix"] = cm.astype(int).tolist()
+    metrics["confusion_matrix_labels"] = label_names
+
+    if y_proba is not None and y_proba.shape[1] == n_classes:
+        try:
+            metrics["log_loss"] = float(
+                log_loss(y_test, y_proba, labels=list(range(n_classes)))
+            )
+        except Exception:
+            metrics["log_loss"] = None
+        # ROC-AUC OvR (macro + weighted)
+        try:
+            metrics["roc_auc_ovr_macro"] = float(
+                roc_auc_score(y_test, y_proba, multi_class="ovr", average="macro")
+            )
+            metrics["roc_auc_ovr_weighted"] = float(
+                roc_auc_score(y_test, y_proba, multi_class="ovr", average="weighted")
+            )
+        except Exception as e:  # noqa: BLE001
+            metrics["roc_auc_error"] = str(e)
+        # PR-AUC OvR (macro)
+        try:
+            y_oh = label_binarize(y_test, classes=list(range(n_classes)))
+            metrics["pr_auc_macro"] = float(
+                average_precision_score(y_oh, y_proba, average="macro")
+            )
+            metrics["pr_auc_weighted"] = float(
+                average_precision_score(y_oh, y_proba, average="weighted")
+            )
+            # Multiclass Brier = mean over classes of binary Brier on one-hot
+            briers = [
+                brier_score_loss(y_oh[:, c], y_proba[:, c])
+                for c in range(n_classes)
+            ]
+            metrics["brier_mean"] = float(np.mean(briers))
+        except Exception as e:  # noqa: BLE001
+            metrics["pr_auc_error"] = str(e)
+    else:
+        metrics["log_loss"] = None
+        metrics["roc_auc_ovr_macro"] = None
+        metrics["pr_auc_macro"] = None
+        metrics["brier_mean"] = None
+
+    # Confusion matrix plot
+    try:
+        fig, ax = plt.subplots(figsize=(7, 6))
+        fig.patch.set_facecolor("#0f1117")
+        ax.set_facecolor("#1a1d27")
+        cm_norm = cm.astype(float) / np.clip(cm.sum(axis=1, keepdims=True), 1, None)
+        im = ax.imshow(cm_norm, cmap="viridis", vmin=0, vmax=1)
+        ax.set_xticks(range(n_classes)); ax.set_yticks(range(n_classes))
+        ax.set_xticklabels(label_names, rotation=35, color="#e0e0e0")
+        ax.set_yticklabels(label_names, color="#e0e0e0")
+        ax.set_xlabel("Predicted", color="#e0e0e0")
+        ax.set_ylabel("True", color="#e0e0e0")
+        ax.set_title(f"{name.upper()} — Normalized Confusion Matrix", color="#e0e0e0")
+        for i in range(n_classes):
+            for j in range(n_classes):
+                ax.text(j, i, f"{cm_norm[i, j]:.2f}", ha="center", va="center",
+                        color="white" if cm_norm[i, j] < 0.5 else "black", fontsize=8)
+        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+        plt.tight_layout()
+        out = PLOTS_DIR / f"confusion_matrix_{name}.png"
+        plt.savefig(out, dpi=150, facecolor="#0f1117")
+        plt.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Confusion matrix plot for %s failed: %s", name, e)
+
+    return metrics
+
+
+def _shap_summary_for_xgb(model: Any, X_sample: np.ndarray, feature_names: List[str]) -> None:
+    """SHAP beeswarm for the XGB selector — multiclass mean(|SHAP|)."""
+    try:
+        import shap as _shap
+    except Exception:
+        return
+    try:
+        sample = X_sample[: min(400, X_sample.shape[0])]
+        explainer = _shap.TreeExplainer(model)
+        shap_values = explainer.shap_values(sample)
+        # Multiclass returns a list (n_classes,) of (n,n_feat) arrays
+        if isinstance(shap_values, list):
+            mean_abs = np.mean([np.abs(s) for s in shap_values], axis=0)
+        else:
+            mean_abs = np.abs(shap_values)
+        fig, ax = plt.subplots(figsize=(10, 8))
+        fig.patch.set_facecolor("#0f1117")
+        ax.set_facecolor("#1a1d27")
+        _shap.summary_plot(
+            mean_abs, sample,
+            feature_names=feature_names,
+            plot_type="dot", show=False, color_bar=True, max_display=20,
+        )
+        plt.gcf().set_facecolor("#0f1117")
+        plt.title("XGB Selector — SHAP (mean |value| over classes)",
+                  color="white", fontsize=13, pad=12)
+        plt.tight_layout()
+        plt.savefig(PLOTS_DIR / "shap_selector_xgb.png", dpi=150,
+                    bbox_inches="tight", facecolor="#0f1117")
+        plt.close()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("SHAP for XGB selector failed: %s", e)
 
 
 def train_selector_models(data_path: Path = DATA_PATH) -> dict:
@@ -164,6 +350,10 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
     }
 
     trained = {}
+    all_metrics: Dict[str, Any] = {
+        "_meta": {"run_hash": run_hash, "label_names": LABEL_NAMES},
+        "models": {},
+    }
 
     for name, model in models.items():
         logger.info("Training %s ...", name.upper())
@@ -197,6 +387,19 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
         logger.info("Saved model -> %s", model_path)
 
         trained[name] = model
+
+        # Comprehensive Q1 metric stack — saved per model.
+        m_dict = _compute_classification_metrics(
+            name, model, X_train, y_train, X_test, y_test, cv_scores, LABEL_NAMES,
+        )
+        all_metrics["models"][name] = m_dict
+        print(
+            f"[{name.upper()}] acc={m_dict['accuracy']:.4f} "
+            f"bal_acc={m_dict['balanced_accuracy']:.4f} "
+            f"f1_macro={m_dict['f1_macro']:.4f} "
+            f"mcc={m_dict['mcc']:.4f} "
+            f"roc_auc_macro={m_dict.get('roc_auc_ovr_macro') or float('nan'):.4f}"
+        )
 
     # ------------------------------------------------------------------
     # NEW in DAHS_2: Export interpretability artifacts
@@ -307,6 +510,40 @@ def train_selector_models(data_path: Path = DATA_PATH) -> dict:
     plt.savefig(dt_path, dpi=120, bbox_inches="tight", facecolor=fig.get_facecolor())
     plt.close()
     logger.info("Saved decision tree plot -> %s", dt_path)
+
+    # Persist the unified classification metrics JSON for the paper tables.
+    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+    with open(RESULTS_DIR / "selector_metrics.json", "w", encoding="utf-8") as f:
+        json.dump(all_metrics, f, indent=2)
+    logger.info("Saved selector_metrics.json")
+
+    # Tabular CSV — paper-ready row per model.
+    try:
+        rows = []
+        for mn, mt in all_metrics["models"].items():
+            rows.append({
+                "model": mn,
+                "accuracy": mt["accuracy"],
+                "balanced_accuracy": mt["balanced_accuracy"],
+                "f1_macro": mt["f1_macro"],
+                "f1_weighted": mt["f1_weighted"],
+                "mcc": mt["mcc"],
+                "cohens_kappa": mt["cohens_kappa"],
+                "roc_auc_ovr_macro": mt.get("roc_auc_ovr_macro"),
+                "pr_auc_macro": mt.get("pr_auc_macro"),
+                "log_loss": mt.get("log_loss"),
+                "brier_mean": mt.get("brier_mean"),
+                "cv_acc_mean": mt["cv_accuracy_mean"],
+                "cv_acc_std":  mt["cv_accuracy_std"],
+            })
+        pd.DataFrame(rows).to_csv(
+            RESULTS_DIR / "selector_metrics_table.csv", index=False,
+        )
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Selector metrics CSV failed: %s", e)
+
+    # SHAP for the headline classifier (XGB)
+    _shap_summary_for_xgb(trained["xgb"], X_test, feature_cols)
 
     return trained
 

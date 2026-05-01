@@ -1,109 +1,121 @@
-import os
-import sys
-import subprocess
-import multiprocessing
-import threading
+"""HF Space wrapper around scripts/run_pipeline.py.
+
+Hardened for the "runtime ended → models gone" failure mode:
+  * Background HubPersistor uploads every 5 min (started by run_pipeline).
+  * SIGTERM/SIGINT handlers do a final upload before exit.
+  * `atexit` fallback if the OS kills us via SIGKILL after a SIGTERM warning.
+  * `pip freeze` and `run_manifest.json` written for reproducibility.
+  * Resilient: pipeline failure still triggers a best-effort artifact upload.
+
+Required Space env vars (Settings → Variables and secrets):
+  HF_TOKEN  — fine-grained token with WRITE access to the model repo
+  REPO_ID   — target model repo, e.g. "your-username/DAHS-Models"
+  SPACE_ID  — (optional) "your-username/your-space-name" for auto-pause
+"""
+from __future__ import annotations
+
 import http.server
+import os
 import socketserver
-from datetime import datetime
+import subprocess
+import sys
+import threading
+from datetime import datetime, timezone
 from pathlib import Path
-from huggingface_hub import HfApi, login
 
-# 1. Configuration
-# You must set these in Hugging Face Space Settings -> Variables and secrets
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+
 HF_TOKEN = os.environ.get("HF_TOKEN")
-REPO_ID = os.environ.get("REPO_ID") # e.g., "Vittal-M/DAHS-Models"
+REPO_ID = os.environ.get("REPO_ID")
+SPACE_ID = os.environ.get("SPACE_ID")  # set automatically inside a Space
 
-def upload_artifacts(api: HfApi) -> None:
-    """Upload data/, models/, results/ to REPO_ID. Best-effort — never raises."""
-    print(f"Uploading artifacts to {REPO_ID}...")
-    for folder in ("data", "models", "results"):
-        if not os.path.exists(folder):
-            print(f"[SKIP] {folder}/ does not exist")
-            continue
-        try:
-            api.upload_folder(
-                folder_path=folder,
-                repo_id=REPO_ID,
-                repo_type="model",
-                path_in_repo=folder,
-            )
-            print(f"[SUCCESS] Uploaded {folder}/")
-        except Exception as e:
-            print(f"[ERROR] Failed to upload {folder}/: {e}")
-    print("\n[DONE] Upload pass complete.")
+# CPU-upgrade tier: 16 vCPUs. The pipeline is multiprocessing-bound, so we
+# leave 1 core for the periodic uploader thread and use the rest for sims.
+CPU_COUNT = os.cpu_count() or 8
+WORKERS = str(max(2, CPU_COUNT - 1))
+
+# Q1 budget: 5000 scenarios → ~300k labeled snapshots; 1000 eval seeds
+# (Friedman + Nemenyi over 1000 paired observations is well into asymptotic
+# regime; Wilcoxon power on this n is essentially saturated).
+SCENARIOS = os.environ.get("DAHS_SCENARIOS", "5000")
+EVAL_SEEDS = os.environ.get("DAHS_EVAL_SEEDS", "1000")
 
 
-def main():
-    print("--- DAHS HF RUNNER STARTING ---")
-    
+def main() -> int:
+    print("--- DAHS_2 HF RUNNER STARTING ---")
+    print(f"Time : {datetime.now(timezone.utc).isoformat()}")
+    print(f"CPUs : {CPU_COUNT}, workers={WORKERS}")
+    print(f"Repo : {REPO_ID}")
+    print(f"Space: {SPACE_ID}")
+
     if not HF_TOKEN or not REPO_ID:
-        print("[FATAL ERROR] HF_TOKEN and REPO_ID environment variables are missing!")
-        print("Please go to Space Settings -> Variables and secrets, and add:")
-        print("1. HF_TOKEN (Must be a Fine-grained token with 'Write' access to models)")
-        print("2. REPO_ID (The exact name of the dataset/model repo, e.g., Vittal-M/DAHS-Models)")
-        sys.exit(1)
+        print("[FATAL] HF_TOKEN and REPO_ID env vars are required.")
+        print("        Settings → Variables and secrets → add both.")
+        return 1
 
-    print(f"Logging into Hugging Face...")
-    login(token=HF_TOKEN)
-    api = HfApi()
+    # Verify Hub access before burning compute.
+    from src.hf_persistence import HubPersistor
+    persistor = HubPersistor(repo_id=REPO_ID, token=HF_TOKEN)
+    persistor.install_signal_handlers()
+    persistor.install_atexit()
+    persistor.start_periodic(interval_seconds=300)
 
-    # 🚨 CRITICAL FIX: Fail FAST if the repo can't be created or accessed
+    # Trick HF Space health check (port 7860 must respond to be "Running").
+    def _start_dummy_server():
+        try:
+            handler = http.server.SimpleHTTPRequestHandler
+            with socketserver.TCPServer(("", 7860), handler) as httpd:
+                httpd.serve_forever()
+        except Exception as e:  # noqa: BLE001
+            print(f"[warn] dummy health server failed: {e}")
+
+    threading.Thread(target=_start_dummy_server, daemon=True).start()
+    print("[ok] dummy health server on :7860")
+
+    print(
+        f"\n--- PIPELINE: {SCENARIOS} scenarios, {EVAL_SEEDS} eval seeds, "
+        f"{WORKERS} workers ---"
+    )
+    cmd = [
+        sys.executable, "scripts/run_pipeline.py",
+        "--scenarios",  SCENARIOS,
+        "--eval-seeds", EVAL_SEEDS,
+        "--workers",    WORKERS,
+    ]
+
+    rc = 1
     try:
-        api.create_repo(repo_id=REPO_ID, repo_type="model", exist_ok=True)
-        print(f"[SUCCESS] Repository {REPO_ID} is accessible and ready.")
-    except Exception as e:
-        print(f"[FATAL ERROR] Failed to create or access the repository {REPO_ID}.")
-        print(f"Reason: {e}")
-        print("ABORTING: We will not start the training to prevent wasting your time/credits.")
-        sys.exit(1)
+        result = subprocess.run(cmd, cwd=str(ROOT))
+        rc = result.returncode
+    except Exception as e:  # noqa: BLE001
+        print(f"[FATAL] pipeline subprocess raised: {e}")
 
-    # Trick Hugging Face Health Checks
-    def start_dummy_server():
-        Handler = http.server.SimpleHTTPRequestHandler
-        with socketserver.TCPServer(("", 7860), Handler) as httpd:
-            httpd.serve_forever()
-    threading.Thread(target=start_dummy_server, daemon=True).start()
-    print("Started dummy web server on port 7860 to bypass health check timeouts.")
-
-    # 2. Run the heavy pipeline
-    # Sized for Q1 results within ~12h compute budget on HF:
-    #   2000 scenarios -> ~120k selector training rows
-    #   500 eval seeds -> 4500 sims, plenty for Friedman/Nemenyi/Wilcoxon
-    cores = "8"
-    print(f"\n--- STARTING DAHS PIPELINE (2000 Scenarios, 500 Eval Seeds, {cores} Workers) ---")
-
-    result = subprocess.run([
-        "python", "scripts/run_pipeline.py",
-        "--scenarios",  "2000",
-        "--eval-seeds", "500",
-        "--workers",    cores,
-    ])
-
-    status = "SUCCESS" if result.returncode == 0 else f"FAILED (exit {result.returncode})"
-    Path("results").mkdir(exist_ok=True)
-    (Path("results") / "run_status.txt").write_text(
-        f"{status}\n{datetime.utcnow().isoformat()}Z\n"
+    status = "SUCCESS" if rc == 0 else f"FAILED (exit {rc})"
+    (ROOT / "results").mkdir(exist_ok=True)
+    (ROOT / "results" / "run_status.txt").write_text(
+        f"{status}\n{datetime.now(timezone.utc).isoformat()}\n",
+        encoding="utf-8",
     )
 
-    if result.returncode == 0:
-        print("--- PIPELINE FINISHED SUCCESSFULLY ---\n")
+    # Always do a final consolidated upload, success or fail.
+    print("\n--- FINAL UPLOAD ---")
+    persistor.stop_periodic()
+    persistor.snapshot(msg=f"runner_final_{status.split()[0]}")
+
+    # Pause the Space to stop billing — only after final upload.
+    target_space = SPACE_ID
+    if not target_space:
+        print("[warn] SPACE_ID not set; skipping auto-pause. Pause manually in Settings.")
     else:
-        print(f"\n[ERROR] Pipeline exited with code {result.returncode}. Uploading partial artifacts anyway.\n")
+        try:
+            persistor.api.pause_space(repo_id=target_space)
+            print(f"[ok] paused {target_space}")
+        except Exception as e:  # noqa: BLE001
+            print(f"[warn] auto-pause failed: {e} — pause manually to stop billing.")
 
-    # 3. Upload trained artifacts (always — even on partial failure)
-    upload_artifacts(api)
+    return rc
 
-    if result.returncode != 0:
-        sys.exit(1)
-
-    # 4. PAUSE THE SPACE TO SAVE CREDITS
-    try:
-        print("Pausing the Space to stop billing...")
-        api.pause_space(repo_id=os.environ.get("SPACE_ID", REPO_ID))
-    except Exception as e:
-        print(f"Failed to pause space automatically: {e}")
-        print("IMPORTANT: Please go to the Space Settings and pause it manually!")
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
