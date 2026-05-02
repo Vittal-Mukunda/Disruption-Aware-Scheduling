@@ -29,3 +29,14 @@ Thumbs.db
 
 # Jupyter
 .ipynb_checkpoints/
+
+# Heavy model artifacts — versioned on HuggingFace, not GitHub
+# To fetch: git clone https://huggingface.co/Vittal-M/Disruption-System
+models/*.joblib
+models_old/*.joblib
+*.stale.joblib
+*.backup.joblib
+
+# Local working copy of the HF repo
+Disruption-System/
+
